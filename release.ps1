@@ -45,7 +45,13 @@ if (Test-Path $pylonPath) {
 
 Push-Location $checkout
 try {
-    ./package_bundle.bat Release
+    if (Test-Path ".\package_bundle.bat") {
+        .\package_bundle.bat Release
+    } elseif (Test-Path ".\build_package.bat") {
+        .\build_package.bat Release
+    } else {
+        throw "No Windows packaging script found in Playground checkout."
+    }
 }
 finally {
     Pop-Location
