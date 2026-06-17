@@ -41,6 +41,11 @@ git -C $checkout submodule update --init --recursive
 $pylonPath = Join-Path $root "pylon"
 if (Test-Path $pylonPath) {
     $env:PLAYGROUND_LOCAL_PYLON_RUNTIME_DIR = (Resolve-Path $pylonPath).Path
+} else {
+    $defaultPylonRuntime = "C:\Program Files\Basler\pylon\Runtime\x64"
+    if (Test-Path $defaultPylonRuntime) {
+        $env:PLAYGROUND_LOCAL_PYLON_RUNTIME_DIR = $defaultPylonRuntime
+    }
 }
 
 Push-Location $checkout
@@ -51,6 +56,9 @@ try {
         .\build_package.bat Release
     } else {
         throw "No Windows packaging script found in Playground checkout."
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw "Playground packaging failed with exit code $LASTEXITCODE."
     }
 }
 finally {
