@@ -81,31 +81,124 @@ $installerOut = Join-Path $dist $installerName
 Copy-Item $installer.FullName $installerOut -Force
 
 $hash = Get-FileHash $installerOut -Algorithm SHA256
-"$($hash.Hash.ToLowerInvariant())  $installerName" |
-    Set-Content -NoNewline -Encoding utf8 "$installerOut.sha256"
+$utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllText(
+    "$installerOut.sha256",
+    "$($hash.Hash.ToLowerInvariant())  $installerName",
+    $utf8NoBom
+)
 
-$commit = git -C $checkout rev-parse HEAD
-$metadata = [ordered]@{
-    version = $PlaygroundTag
-    playgroundTag = $PlaygroundTag
-    playgroundCommit = $commit
-    channel = "stable"
-    publishedAt = (Get-Date).ToUniversalTime().ToString("o")
-    installer = [ordered]@{
-        platform = "windows-x64"
-        fileName = $installerName
-        url = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
-        sha256 = $hash.Hash.ToLowerInvariant()
+# Run repogen to generate update repository
+$cpackIfwRoot = $env:CPACK_IFW_ROOT
+if (-not $cpackIfwRoot) {
+    if (Test-Path "C:\Qt\Tools\QtInstallerFramework") {
+        $cpackIfwRoot = (Get-ChildItem "C:\Qt\Tools\QtInstallerFramework" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
     }
-    releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
+}
+if (-not $cpackIfwRoot) {
+    throw "Qt Installer Framework path not found. Please set CPACK_IFW_ROOT environment variable."
+}
+$repogen = Join-Path $cpackIfwRoot "bin/repogen.exe"
+if (-not (Test-Path $repogen)) {
+    throw "repogen.exe not found at $repogen"
 }
 
-$metadata | ConvertTo-Json -Depth 6 | Set-Content -Encoding utf8 (Join-Path $dist "latest.json")
+$ifwTempDir = Get-ChildItem (Join-Path $checkout "build/bundle/_CPack_Packages/win64/IFW") -Directory |
+    Where-Object { Test-Path (Join-Path $_.FullName "packages") } |
+    Sort-Object LastWriteTime -Descending |
+    Select-Object -First 1
 
-gh release create $PlaygroundTag `
-    $installerOut `
-    "$installerOut.sha256" `
-    (Join-Path $dist "latest.json") `
-    --title "Basler Playground $PlaygroundTag" `
-    --notes "Installer built from private Playground tag $PlaygroundTag ($commit)." `
-    --draft
+if (-not $ifwTempDir) {
+    throw "IFW temporary packages directory not found."
+}
+$packagesDir = Join-Path $ifwTempDir.FullName "packages"
+
+$repoOutDir = Join-Path $dist "repository"
+if (Test-Path $repoOutDir) {
+    Remove-Item $repoOutDir -Recurse -Force
+}
+Write-Host "Running repogen to build repository at $repoOutDir..."
+& $repogen -p $packagesDir $repoOutDir
+if ($LASTEXITCODE -ne 0) {
+    throw "repogen failed with exit code $LASTEXITCODE."
+}
+if (-not (Test-Path (Join-Path $repoOutDir "Updates.xml"))) {
+    throw "repogen completed without creating Updates.xml."
+}
+
+# Zip repository
+$repoZipOut = Join-Path $dist "repository.zip"
+if (Test-Path $repoZipOut) {
+    Remove-Item $repoZipOut -Force
+}
+Write-Host "Compressing repository to $repoZipOut..."
+Compress-Archive -Path "$repoOutDir\*" -DestinationPath $repoZipOut -Force
+
+$repoZipHash = Get-FileHash $repoZipOut -Algorithm SHA256
+
+$commit = git -C $checkout rev-parse HEAD
+$version = $PlaygroundTag.Substring(1)
+$releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
+$installerUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
+$repositoryZipUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/repository.zip"
+$metadata = [ordered]@{
+    version = $version
+    tag = $PlaygroundTag
+    channel = "stable"
+    publishedAt = (Get-Date).ToUniversalTime().ToString("o")
+    notesUrl = $releaseUrl
+    platforms = @(
+        [ordered]@{
+            os = "windows"
+            arch = "x64"
+            package = "exe"
+            fileName = $installerName
+            url = $installerUrl
+            sha256 = $hash.Hash.ToLowerInvariant()
+        }
+    )
+    repositoryZip = [ordered]@{
+        fileName = "repository.zip"
+        url = $repositoryZipUrl
+        sha256 = $repoZipHash.Hash.ToLowerInvariant()
+    }
+    playgroundCommit = $commit
+}
+
+$metadataOut = Join-Path $dist "latest.json"
+[System.IO.File]::WriteAllText(
+    $metadataOut,
+    ($metadata | ConvertTo-Json -Depth 6),
+    $utf8NoBom
+)
+
+$releaseAssets = @(
+    $installerOut,
+    "$installerOut.sha256",
+    $repoZipOut,
+    $metadataOut
+)
+$releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
+
+gh release view $PlaygroundTag *> $null
+$releaseExists = $LASTEXITCODE -eq 0
+if ($releaseExists) {
+    gh release upload $PlaygroundTag @releaseAssets --clobber
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to upload release assets for $PlaygroundTag."
+    }
+    gh release edit $PlaygroundTag `
+        --title "Basler Playground $PlaygroundTag" `
+        --notes $releaseNotes
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to update release metadata for $PlaygroundTag."
+    }
+} else {
+    gh release create $PlaygroundTag @releaseAssets `
+        --title "Basler Playground $PlaygroundTag" `
+        --notes $releaseNotes `
+        --draft
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to create draft release for $PlaygroundTag."
+    }
+}
