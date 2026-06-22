@@ -33,7 +33,10 @@ if (-not (Test-Path $checkout)) {
     git clone --filter=blob:none $PlaygroundRepo $checkout
 }
 
-git -C $checkout fetch --tags origin
+git -C $checkout fetch --force --tags origin
+if ($LASTEXITCODE -ne 0) {
+    throw "Failed to fetch Playground tags from origin."
+}
 git -C $checkout checkout --force $PlaygroundTag
 # Initialize Playground's own private/internal submodules after the tag checkout.
 git -C $checkout submodule update --init --recursive
@@ -180,8 +183,15 @@ $releaseAssets = @(
 )
 $releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
 
-gh release view $PlaygroundTag *> $null
-$releaseExists = $LASTEXITCODE -eq 0
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "SilentlyContinue"
+    gh release view $PlaygroundTag 2>$null | Out-Null
+    $releaseExists = $LASTEXITCODE -eq 0
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
 if ($releaseExists) {
     gh release upload $PlaygroundTag @releaseAssets --clobber
     if ($LASTEXITCODE -ne 0) {
