@@ -141,13 +141,15 @@ $repoZipHash = Get-FileHash $repoZipOut -Algorithm SHA256
 
 $commit = git -C $checkout rev-parse HEAD
 $version = $PlaygroundTag.Substring(1)
+$isPrerelease = $PlaygroundTag.Contains("-")
+$channel = if ($isPrerelease) { "prerelease" } else { "stable" }
 $releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
 $installerUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
 $repositoryZipUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/repository.zip"
 $metadata = [ordered]@{
     version = $version
     tag = $PlaygroundTag
-    channel = "stable"
+    channel = $channel
     publishedAt = (Get-Date).ToUniversalTime().ToString("o")
     notesUrl = $releaseUrl
     platforms = @(
@@ -182,6 +184,10 @@ $releaseAssets = @(
     $metadataOut
 )
 $releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
+$releaseTypeArguments = @()
+if ($isPrerelease) {
+    $releaseTypeArguments += "--prerelease"
+}
 
 $previousErrorActionPreference = $ErrorActionPreference
 try {
@@ -199,7 +205,8 @@ if ($releaseExists) {
     }
     gh release edit $PlaygroundTag `
         --title "Basler Playground $PlaygroundTag" `
-        --notes $releaseNotes
+        --notes $releaseNotes `
+        @releaseTypeArguments
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to update release metadata for $PlaygroundTag."
     }
@@ -207,6 +214,7 @@ if ($releaseExists) {
     gh release create $PlaygroundTag @releaseAssets `
         --title "Basler Playground $PlaygroundTag" `
         --notes $releaseNotes `
+        @releaseTypeArguments `
         --draft
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to create draft release for $PlaygroundTag."
