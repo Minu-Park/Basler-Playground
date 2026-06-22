@@ -17,29 +17,45 @@ function Require-Command($Name) {
     }
 }
 
+function Invoke-NativeCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+
+        [string[]]$ArgumentList = @(),
+
+        [Parameter(Mandatory = $true)]
+        [string]$FailureMessage
+    )
+
+    & $FilePath @ArgumentList
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "$FailureMessage (exit code $exitCode)."
+    }
+}
+
 Require-Command git
 Require-Command gh
 
-gh auth status | Out-Null
+Invoke-NativeCommand gh @("auth", "status") "GitHub CLI authentication check failed" | Out-Null
 
 if ($PlaygroundTag -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
     throw "PlaygroundTag must look like vX.Y.Z."
 }
+$packageVersion = [regex]::Match($PlaygroundTag, '^v(\d+\.\d+\.\d+)').Groups[1].Value
 
 $root = $PSScriptRoot
 $checkout = Join-Path $root "playground"
 
 if (-not (Test-Path $checkout)) {
-    git clone --filter=blob:none $PlaygroundRepo $checkout
+    Invoke-NativeCommand git @("clone", "--filter=blob:none", $PlaygroundRepo, $checkout) "Failed to clone Playground"
 }
 
-git -C $checkout fetch --force --tags origin
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed to fetch Playground tags from origin."
-}
-git -C $checkout checkout --force $PlaygroundTag
+Invoke-NativeCommand git @("-C", $checkout, "fetch", "--force", "--tags", "origin") "Failed to fetch Playground tags from origin"
+Invoke-NativeCommand git @("-C", $checkout, "checkout", "--force", $PlaygroundTag) "Failed to check out Playground tag $PlaygroundTag"
 # Initialize Playground's own private/internal submodules after the tag checkout.
-git -C $checkout submodule update --init --recursive
+Invoke-NativeCommand git @("-C", $checkout, "submodule", "update", "--init", "--recursive") "Failed to initialize Playground submodules"
 
 $pylonPath = Join-Path $root "pylon"
 if (Test-Path $pylonPath) {
@@ -71,12 +87,12 @@ finally {
 $dist = Join-Path $root "dist"
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
-$installer = Get-ChildItem (Join-Path $checkout "build/bundle") -Filter *.exe |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 1
+$expectedInstallerName = "Basler Playground-$packageVersion-win64-release.exe"
+$expectedInstallerPath = Join-Path $checkout "build/bundle/$expectedInstallerName"
+$installer = Get-Item $expectedInstallerPath -ErrorAction SilentlyContinue
 
 if (-not $installer) {
-    throw "No installer exe found under playground/build/bundle."
+    throw "Expected installer not found: $expectedInstallerPath"
 }
 
 $installerName = "BaslerPlayground-$PlaygroundTag-windows-x64.exe"
@@ -91,28 +107,26 @@ $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     $utf8NoBom
 )
 
-# Run repogen to generate update repository
+$ifwPackageName = "Basler Playground-$packageVersion-win64-release"
+$ifwTempPath = Join-Path $checkout "build/bundle/_CPack_Packages/win64/IFW/$ifwPackageName"
+$ifwTempDir = Get-Item $ifwTempPath -ErrorAction SilentlyContinue
+
+if (-not $ifwTempDir -or -not (Test-Path (Join-Path $ifwTempDir.FullName "packages"))) {
+    throw "Expected CPack IFW package directory was not found: $ifwTempPath"
+}
+
 $cpackIfwRoot = $env:CPACK_IFW_ROOT
-if (-not $cpackIfwRoot) {
-    if (Test-Path "C:\Qt\Tools\QtInstallerFramework") {
-        $cpackIfwRoot = (Get-ChildItem "C:\Qt\Tools\QtInstallerFramework" -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
-    }
+if (-not $cpackIfwRoot -and (Test-Path "C:\Qt\Tools\QtInstallerFramework")) {
+    $cpackIfwRoot = (Get-ChildItem "C:\Qt\Tools\QtInstallerFramework" -Directory |
+        Sort-Object Name -Descending |
+        Select-Object -First 1).FullName
 }
 if (-not $cpackIfwRoot) {
-    throw "Qt Installer Framework path not found. Please set CPACK_IFW_ROOT environment variable."
+    throw "Qt Installer Framework path not found. Set CPACK_IFW_ROOT."
 }
 $repogen = Join-Path $cpackIfwRoot "bin/repogen.exe"
 if (-not (Test-Path $repogen)) {
-    throw "repogen.exe not found at $repogen"
-}
-
-$ifwTempDir = Get-ChildItem (Join-Path $checkout "build/bundle/_CPack_Packages/win64/IFW") -Directory |
-    Where-Object { Test-Path (Join-Path $_.FullName "packages") } |
-    Sort-Object LastWriteTime -Descending |
-    Select-Object -First 1
-
-if (-not $ifwTempDir) {
-    throw "IFW temporary packages directory not found."
+    throw "repogen.exe not found: $repogen"
 }
 $packagesDir = Join-Path $ifwTempDir.FullName "packages"
 
@@ -120,11 +134,8 @@ $repoOutDir = Join-Path $dist "repository"
 if (Test-Path $repoOutDir) {
     Remove-Item $repoOutDir -Recurse -Force
 }
-Write-Host "Running repogen to build repository at $repoOutDir..."
-& $repogen -p $packagesDir $repoOutDir
-if ($LASTEXITCODE -ne 0) {
-    throw "repogen failed with exit code $LASTEXITCODE."
-}
+Write-Host "Generating IFW update repository at $repoOutDir..."
+Invoke-NativeCommand $repogen @("-p", $packagesDir, $repoOutDir) "repogen failed"
 if (-not (Test-Path (Join-Path $repoOutDir "Updates.xml"))) {
     throw "repogen completed without creating Updates.xml."
 }
@@ -139,7 +150,7 @@ Compress-Archive -Path "$repoOutDir\*" -DestinationPath $repoZipOut -Force
 
 $repoZipHash = Get-FileHash $repoZipOut -Algorithm SHA256
 
-$commit = git -C $checkout rev-parse HEAD
+$commit = (Invoke-NativeCommand git @("-C", $checkout, "rev-parse", "HEAD") "Failed to resolve the Playground commit" | Select-Object -Last 1).Trim()
 $version = $PlaygroundTag.Substring(1)
 $isPrerelease = $PlaygroundTag.Contains("-")
 $channel = if ($isPrerelease) { "prerelease" } else { "stable" }
@@ -199,24 +210,15 @@ finally {
     $ErrorActionPreference = $previousErrorActionPreference
 }
 if ($releaseExists) {
-    gh release upload $PlaygroundTag @releaseAssets --clobber
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to upload release assets for $PlaygroundTag."
-    }
-    gh release edit $PlaygroundTag `
-        --title "Basler Playground $PlaygroundTag" `
-        --notes $releaseNotes `
-        @releaseTypeArguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to update release metadata for $PlaygroundTag."
-    }
+    Invoke-NativeCommand gh (@("release", "upload", $PlaygroundTag) + $releaseAssets + @("--clobber")) "Failed to upload release assets for $PlaygroundTag"
+    Invoke-NativeCommand gh (@(
+        "release", "edit", $PlaygroundTag,
+        "--title", "Basler Playground $PlaygroundTag",
+        "--notes", $releaseNotes
+    ) + $releaseTypeArguments) "Failed to update release metadata for $PlaygroundTag"
 } else {
-    gh release create $PlaygroundTag @releaseAssets `
-        --title "Basler Playground $PlaygroundTag" `
-        --notes $releaseNotes `
-        @releaseTypeArguments `
-        --draft
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to create draft release for $PlaygroundTag."
-    }
+    Invoke-NativeCommand gh (@("release", "create", $PlaygroundTag) + $releaseAssets + @(
+        "--title", "Basler Playground $PlaygroundTag",
+        "--notes", $releaseNotes
+    ) + $releaseTypeArguments + @("--draft")) "Failed to create draft release for $PlaygroundTag"
 }
