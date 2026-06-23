@@ -69,3 +69,15 @@ Run the isolated host test without modifying the normal Playground installation:
 ```
 
 It installs the stable baseline under `%LOCALAPPDATA%\BaslerPlaygroundUpdaterValidation`, reads validation metadata from the public prerelease, downloads and verifies `repository.zip` over HTTPS through the application, updates to virtual `0.1.3`, verifies the exact component set, executable version, smoke startup, and final no-update result, then purges the isolated installation. It refuses to reuse an existing validation directory. This host gate does not prove Program Files elevation; the visible UAC test remains manual.
+
+For the final visible Program Files and UAC gate, run:
+
+```powershell
+.\installer-validation\Start-ProgramFilesUpdateValidation.ps1
+```
+
+Approve the fixture-install UAC prompt, then choose **Help > Check for Updates... > Install Update** and approve the updater UAC prompt. Confirm version `0.1.3`, then remove only the isolated fixture with:
+
+```powershell
+.\installer-validation\Start-ProgramFilesUpdateValidation.ps1 -Cleanup
+```
