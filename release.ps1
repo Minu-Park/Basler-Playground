@@ -135,9 +135,15 @@ if (Test-Path $repoOutDir) {
     Remove-Item $repoOutDir -Recurse -Force
 }
 Write-Host "Generating IFW update repository at $repoOutDir..."
-Invoke-NativeCommand $repogen @("-p", $packagesDir, $repoOutDir) "repogen failed"
-if (-not (Test-Path (Join-Path $repoOutDir "Updates.xml"))) {
+$updatesXmlPath = Join-Path $repoOutDir "Updates.xml"
+Invoke-NativeCommand $repogen @("-p", $packagesDir, "--include", "Playground", $repoOutDir) "repogen failed"
+if (-not (Test-Path $updatesXmlPath)) {
     throw "repogen completed without creating Updates.xml."
+}
+$updatesXml = [xml](Get-Content $updatesXmlPath -Raw)
+$updatePackageNames = @($updatesXml.Updates.PackageUpdate | ForEach-Object { [string]$_.Name })
+if ($updatePackageNames.Count -ne 1 -or $updatePackageNames[0] -ne "Playground") {
+    throw "Update repository must contain only the Playground component; found: $($updatePackageNames -join ', ')."
 }
 
 # Zip repository
