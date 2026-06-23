@@ -88,6 +88,10 @@ function Assert-ExpectedComponents {
             throw "Component version mismatch for $($entry.Key): expected $($entry.Value), found $($Actual[$entry.Key])."
         }
     }
+    $unexpected = @($Actual.Keys | Where-Object { -not $Expected.Contains($_) })
+    if ($unexpected.Count -gt 0) {
+        throw "Unexpected installed components remain after update: $($unexpected -join ', ')."
+    }
 }
 
 function Assert-NoUpdates {
