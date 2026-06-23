@@ -46,7 +46,7 @@ Use `-GenerateOnly` to inspect the generated configuration without launching San
 ## Acceptance
 
 - `result.json` reports `passed: true`.
-- `components-after.json` matches every `PackageUpdate` name and version in candidate `Updates.xml`.
+- `components-after.json` exactly matches the component names and versions in candidate `Updates.xml`; no legacy component may remain.
 - `application-version-after.txt` matches the candidate `PlaygroundCore` version.
 - `MSVCBuildTools`, `WindowsSDK`, and `DevelopmentPrerequisitesPayload` are absent from the update repository.
 - Playground remains alive for the smoke-test window.

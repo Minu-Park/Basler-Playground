@@ -95,7 +95,12 @@ function New-HardLinkedDirectory {
         $relativePath = $file.FullName.Substring($sourcePath.Length + 1)
         $destinationFile = Join-Path $Destination $relativePath
         New-Item -ItemType Directory -Force -Path (Split-Path $destinationFile -Parent) | Out-Null
-        New-Item -ItemType HardLink -Path $destinationFile -Target $file.FullName | Out-Null
+        try {
+            New-Item -ItemType HardLink -Path $destinationFile -Target $file.FullName -ErrorAction Stop | Out-Null
+        }
+        catch {
+            Copy-Item -LiteralPath $file.FullName -Destination $destinationFile -Force
+        }
     }
 }
 
