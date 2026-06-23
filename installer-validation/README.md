@@ -58,3 +58,14 @@ Use `-GenerateOnly` to inspect the generated configuration without launching San
 2. Require `passed: true`, MaintenanceTool exit code `0`, all expected component versions, the candidate application version, a successful smoke window, and `no updates available` in `check-updates.log`.
 3. Review the parent and DeployKit diffs, then compare the code changes with `docs/WINDOWS_IFW_UPDATE_PIPELINE.md`; validation hooks must remain disabled by default and installer-only prerequisites must not enter `Updates.xml`.
 4. Perform one final installed UI check against a controlled HTTPS endpoint before publishing; the automated local-file hook proves the application decision and launch path but not public hosting, TLS, or the visible UAC interaction.
+
+## Real Host HTTPS Gate
+
+Run the isolated host test without modifying the normal Playground installation:
+
+```powershell
+.\installer-validation\Invoke-HostUpdateValidation.ps1 `
+  -PlaygroundRoot C:\Users\minwoo\Documents\Playground-ifw-components
+```
+
+It installs the stable baseline under `%LOCALAPPDATA%\BaslerPlaygroundUpdaterValidation`, reads validation metadata from the public prerelease, downloads and verifies `repository.zip` over HTTPS through the application, updates to virtual `0.1.3`, verifies the exact component set, executable version, smoke startup, and final no-update result, then purges the isolated installation. It refuses to reuse an existing validation directory. This host gate does not prove Program Files elevation; the visible UAC test remains manual.
