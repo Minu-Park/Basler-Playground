@@ -9,13 +9,7 @@ param(
 
     [int]$UpdateEpoch = 2,
 
-    [switch]$ForceFullInstaller,
-
-    [string]$RepositoryBranch = "ifw-repository",
-
-    [string]$RepositoryPath = "windows/x64",
-
-    [string]$RepositoryUrl = "https://raw.githubusercontent.com/Minu-Park/basler-playground/ifw-repository/windows/x64/"
+    [switch]$ForceFullInstaller
 )
 
 $ErrorActionPreference = "Stop"
@@ -42,44 +36,6 @@ function Invoke-NativeCommand {
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
         throw "$FailureMessage (exit code $exitCode)."
-    }
-}
-
-function Get-ComponentContentHash {
-    param([Parameter(Mandatory = $true)][string]$Path)
-
-    $resolvedPath = (Resolve-Path $Path).Path
-    $lines = Get-ChildItem $resolvedPath -Recurse -File |
-        Sort-Object FullName |
-        ForEach-Object {
-            $relativePath = $_.FullName.Substring($resolvedPath.Length + 1).Replace('\', '/')
-            if ($relativePath -ieq "meta/package.xml") {
-                $packageXml = [xml](Get-Content $_.FullName -Raw)
-                $releaseDateNode = $packageXml.SelectSingleNode("/Package/ReleaseDate")
-                if ($releaseDateNode) {
-                    [void]$releaseDateNode.ParentNode.RemoveChild($releaseDateNode)
-                }
-                $normalizedBytes = [System.Text.Encoding]::UTF8.GetBytes($packageXml.Package.OuterXml)
-                $fileSha = [System.Security.Cryptography.SHA256]::Create()
-                try {
-                    $fileHash = ([System.BitConverter]::ToString($fileSha.ComputeHash($normalizedBytes))).Replace("-", "").ToLowerInvariant()
-                }
-                finally {
-                    $fileSha.Dispose()
-                }
-                "$relativePath`t$($normalizedBytes.Length)`t$fileHash"
-            } else {
-                $fileHash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
-                "$relativePath`t$($_.Length)`t$fileHash"
-            }
-        }
-    $bytes = [System.Text.Encoding]::UTF8.GetBytes(($lines -join "`n"))
-    $sha256 = [System.Security.Cryptography.SHA256]::Create()
-    try {
-        return ([System.BitConverter]::ToString($sha256.ComputeHash($bytes))).Replace("-", "").ToLowerInvariant()
-    }
-    finally {
-        $sha256.Dispose()
     }
 }
 
@@ -114,14 +70,6 @@ if ($PlaygroundTag -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
 }
 if ($UpdateEpoch -lt 1) {
     throw "UpdateEpoch must be a positive integer."
-}
-if ([System.IO.Path]::IsPathRooted($RepositoryPath) -or $RepositoryPath -split '[/\\]' -contains '..') {
-    throw "RepositoryPath must be a relative path without parent traversal."
-}
-$repositoryUri = $null
-if (-not [System.Uri]::TryCreate($RepositoryUrl, [System.UriKind]::Absolute, [ref]$repositoryUri) -or
-    $repositoryUri.Scheme -ne [System.Uri]::UriSchemeHttps) {
-    throw "RepositoryUrl must be an absolute HTTPS URL."
 }
 $packageVersion = [regex]::Match($PlaygroundTag, '^v(\d+\.\d+\.\d+)').Groups[1].Value
 
@@ -223,41 +171,18 @@ if ($invalidUpdateComponents.Count -gt 0) {
     throw "Installer-only components cannot enter the update repository: $($invalidUpdateComponents -join ', ')."
 }
 
-$repositoryWorktree = Join-Path ([System.IO.Path]::GetTempPath()) ("basler-playground-ifw-" + [guid]::NewGuid().ToString("N"))
-$repositoryRoot = Join-Path $repositoryWorktree $RepositoryPath
-$repositoryManifestPath = Join-Path $repositoryWorktree ".release/component-content.json"
+$repositoryRoot = Join-Path $dist "repository"
+$filteredPackages = Join-Path $checkout "build/release-packages"
+if (Test-Path $repositoryRoot) {
+    Remove-Item $repositoryRoot -Recurse -Force
+}
+if (Test-Path $filteredPackages) {
+    Remove-Item $filteredPackages -Recurse -Force
+}
+New-Item -ItemType Directory -Force -Path $repositoryRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $filteredPackages | Out-Null
+
 try {
-    & git -C $root ls-remote --exit-code --heads origin $RepositoryBranch 2>$null | Out-Null
-    $repositoryBranchExists = $LASTEXITCODE -eq 0
-    if ($repositoryBranchExists) {
-        Invoke-NativeCommand git @("-C", $root, "fetch", "--force", "origin", "+refs/heads/$RepositoryBranch`:refs/remotes/origin/$RepositoryBranch") "Failed to fetch repository publishing branch"
-        Invoke-NativeCommand git @("-C", $root, "worktree", "add", "--detach", $repositoryWorktree, "origin/$RepositoryBranch") "Failed to create repository publishing worktree"
-    } else {
-        Invoke-NativeCommand git @("-C", $root, "worktree", "add", "--detach", $repositoryWorktree) "Failed to create repository publishing worktree"
-        Invoke-NativeCommand git @("-C", $repositoryWorktree, "checkout", "--orphan", $RepositoryBranch) "Failed to create repository branch"
-        $safeTempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
-        $safeWorktree = [System.IO.Path]::GetFullPath($repositoryWorktree)
-        if (-not $safeWorktree.StartsWith($safeTempRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
-            throw "Refusing to clear repository worktree outside the temporary directory: $safeWorktree"
-        }
-        Get-ChildItem $repositoryWorktree -Force | Where-Object { $_.Name -ne ".git" } | Remove-Item -Recurse -Force
-    }
-
-    $previousContent = @{}
-    $previousHashFormat = 1
-    if (Test-Path $repositoryManifestPath) {
-        $previousJson = Get-Content $repositoryManifestPath -Raw | ConvertFrom-Json
-        if ($previousJson.hashFormat) {
-            $previousHashFormat = [int]$previousJson.hashFormat
-        }
-        foreach ($property in $previousJson.components.psobject.Properties) {
-            $previousContent[$property.Name] = $property.Value
-        }
-    }
-
-    $currentContent = [ordered]@{}
-    $filteredPackages = Join-Path $repositoryWorktree ".packages"
-    New-Item -ItemType Directory -Force -Path $filteredPackages | Out-Null
     foreach ($component in $updateComponents) {
         $packageDir = Join-Path $packagesDir $component
         $packageXmlPath = Join-Path $packageDir "meta/package.xml"
@@ -265,57 +190,39 @@ try {
         if (-not (Test-Path $packageXmlPath) -or -not (Test-Path $packageDataPath)) {
             throw "Update component package is incomplete: $component"
         }
-        $packageXml = [xml](Get-Content $packageXmlPath -Raw)
-        $componentVersion = [string]$packageXml.Package.Version
-        $contentHash = Get-ComponentContentHash $packageDir
-        if ($previousHashFormat -eq 2 -and $previousContent.ContainsKey($component)) {
-            $previous = $previousContent[$component]
-            if ([string]$previous.version -eq $componentVersion -and [string]$previous.sha256 -ne $contentHash) {
-                throw "Component '$component' content changed without a version bump ($componentVersion)."
-            }
-        }
-        $currentContent[$component] = [ordered]@{ version = $componentVersion; sha256 = $contentHash }
         New-HardLinkedDirectory $packageDir (Join-Path $filteredPackages $component)
     }
 
-    New-Item -ItemType Directory -Force -Path $repositoryRoot | Out-Null
-    if ($repositoryBranchExists -and (Test-Path (Join-Path $repositoryRoot "Updates.xml"))) {
-        Invoke-NativeCommand $repogen @("--update-new-components", "-p", $filteredPackages, $repositoryRoot) "Incremental repogen failed"
-    } else {
-        Invoke-NativeCommand $repogen @("-p", $filteredPackages, $repositoryRoot) "repogen failed"
-    }
-    Remove-Item $filteredPackages -Recurse -Force
-
-    $updatesXmlPath = Join-Path $repositoryRoot "Updates.xml"
-    if (-not (Test-Path $updatesXmlPath)) {
-        throw "repogen completed without creating Updates.xml."
-    }
-    $updatesXml = [xml](Get-Content $updatesXmlPath -Raw)
-    $updatePackageNames = @($updatesXml.Updates.PackageUpdate | ForEach-Object { [string]$_.Name })
-    $unexpectedPackages = @($updatePackageNames | Where-Object { $_ -notin $updateComponents })
-    $missingPackages = @($updateComponents | Where-Object { $_ -notin $updatePackageNames })
-    if ($unexpectedPackages.Count -gt 0 -or $missingPackages.Count -gt 0) {
-        throw "Update repository component mismatch. Unexpected: $($unexpectedPackages -join ', '); missing: $($missingPackages -join ', ')."
-    }
-
-    New-Item -ItemType Directory -Force -Path (Split-Path $repositoryManifestPath -Parent) | Out-Null
-    [System.IO.File]::WriteAllText(
-        $repositoryManifestPath,
-        ([ordered]@{ hashFormat = 2; epoch = $UpdateEpoch; components = $currentContent } | ConvertTo-Json -Depth 6),
-        $utf8NoBom
-    )
-    Invoke-NativeCommand git @("-C", $repositoryWorktree, "add", "--all") "Failed to stage repository update"
-    & git -C $repositoryWorktree diff --cached --quiet
-    if ($LASTEXITCODE -ne 0) {
-        Invoke-NativeCommand git @("-C", $repositoryWorktree, "commit", "-m", "release: publish IFW repository for $PlaygroundTag") "Failed to commit repository update"
-        Invoke-NativeCommand git @("-C", $repositoryWorktree, "push", "origin", "HEAD:refs/heads/$RepositoryBranch") "Failed to publish repository branch"
-    }
+    Invoke-NativeCommand $repogen @("-p", $filteredPackages, $repositoryRoot) "repogen failed"
 }
 finally {
-    if (Test-Path $repositoryWorktree) {
-        & git -C $root worktree remove --force $repositoryWorktree 2>$null
+    if (Test-Path $filteredPackages) {
+        Remove-Item $filteredPackages -Recurse -Force
     }
 }
+
+$updatesXmlPath = Join-Path $repositoryRoot "Updates.xml"
+if (-not (Test-Path $updatesXmlPath)) {
+    throw "repogen completed without creating Updates.xml."
+}
+$updatesXml = [xml](Get-Content $updatesXmlPath -Raw)
+$updatePackageNames = @($updatesXml.Updates.PackageUpdate | ForEach-Object { [string]$_.Name })
+$unexpectedPackages = @($updatePackageNames | Where-Object { $_ -notin $updateComponents })
+$missingPackages = @($updateComponents | Where-Object { $_ -notin $updatePackageNames })
+if ($unexpectedPackages.Count -gt 0 -or $missingPackages.Count -gt 0) {
+    throw "Update repository component mismatch. Unexpected: $($unexpectedPackages -join ', '); missing: $($missingPackages -join ', ')."
+}
+
+$repositoryZipName = "BaslerPlayground-$PlaygroundTag-ifw-repository.zip"
+$repositoryZipOut = Join-Path $dist $repositoryZipName
+if (Test-Path $repositoryZipOut) {
+    Remove-Item $repositoryZipOut -Force
+}
+Compress-Archive -Path (Join-Path $repositoryRoot "*") -DestinationPath $repositoryZipOut -CompressionLevel Optimal
+if (-not (Test-Path $repositoryZipOut)) {
+    throw "Failed to create IFW repository archive: $repositoryZipOut"
+}
+$repositoryZipHash = Get-FileHash $repositoryZipOut -Algorithm SHA256
 
 $commit = (Invoke-NativeCommand git @("-C", $checkout, "rev-parse", "HEAD") "Failed to resolve the Playground commit" | Select-Object -Last 1).Trim()
 $version = $PlaygroundTag.Substring(1)
@@ -323,6 +230,7 @@ $isPrerelease = $PlaygroundTag.Contains("-")
 $channel = if ($isPrerelease) { "prerelease" } else { "stable" }
 $releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
 $installerUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
+$repositoryZipUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$repositoryZipName"
 $metadata = [ordered]@{
     version = $version
     tag = $PlaygroundTag
@@ -346,8 +254,10 @@ $metadata = [ordered]@{
     playgroundCommit = $commit
 }
 if (-not $ForceFullInstaller) {
-    $metadata.repository = [ordered]@{
-        url = $RepositoryUrl
+    $metadata.repositoryZip = [ordered]@{
+        fileName = $repositoryZipName
+        url = $repositoryZipUrl
+        sha256 = $repositoryZipHash.Hash.ToLowerInvariant()
     }
 }
 
@@ -361,6 +271,7 @@ $metadataOut = Join-Path $dist "latest.json"
 $releaseAssets = @(
     $installerOut,
     "$installerOut.sha256",
+    $repositoryZipOut,
     $metadataOut
 )
 $releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
