@@ -180,7 +180,7 @@ try {
     )
 
     if ($settings.scenario -in @("ComponentUpdate", "ApplicationUpdate")) {
-        Invoke-CheckedProcess $settings.baselineInstaller ($installOptions + @("install", "Playground")) "Baseline installation"
+        Invoke-CheckedProcess $settings.baselineInstaller ($installOptions + @("install", "PlaygroundCore")) "Baseline installation"
         $before = Get-InstalledComponents $installRoot
         $before | ConvertTo-Json | Set-Content (Join-Path $Output "components-before.json") -Encoding UTF8
 
