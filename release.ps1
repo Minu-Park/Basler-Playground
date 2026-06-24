@@ -249,12 +249,18 @@ $channel = if ($isPrerelease) { "prerelease" } else { "stable" }
 $releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
 $installerUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
 $repositoryZipUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$repositoryZipName"
+$releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
+$routedReleaseNotes = Get-ReleaseNotesForTag (Join-Path $checkout "RELEASE_NOTES.md") $PlaygroundTag
+if ($routedReleaseNotes) {
+    $releaseNotes = $routedReleaseNotes
+}
 $metadata = [ordered]@{
     version = $version
     tag = $PlaygroundTag
     channel = $channel
     publishedAt = (Get-Date).ToUniversalTime().ToString("o")
     notesUrl = $releaseUrl
+    releaseNotes = $releaseNotes
     platforms = @(
         [ordered]@{
             os = "windows"
@@ -292,11 +298,6 @@ $releaseAssets = @(
     $repositoryZipOut,
     $metadataOut
 )
-$releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
-$routedReleaseNotes = Get-ReleaseNotesForTag (Join-Path $checkout "RELEASE_NOTES.md") $PlaygroundTag
-if ($routedReleaseNotes) {
-    $releaseNotes = $routedReleaseNotes
-}
 $releaseNotesOut = Join-Path $dist "release-notes.md"
 [System.IO.File]::WriteAllText($releaseNotesOut, $releaseNotes, $utf8NoBom)
 $releaseTypeArguments = @()
