@@ -7,6 +7,7 @@ This is a standalone Windows Sandbox harness for repeatable Qt Installer Framewo
 - `CleanInstall`: install a candidate offline installer, verify IFW state, smoke-start Playground, and purge it.
 - `ComponentUpdate`: install a baseline, invoke MaintenanceTool against a candidate raw repository, verify every repository component version, require installer-only prerequisites to stay out of the repository, smoke-start Playground, require a no-update result, and purge it.
 - `ApplicationUpdate`: replace only the installed baseline executable with a test-hook build of the same version, fetch local `latest.json` through `UpdateChecker`, traverse the application's Install Update callback, run MaintenanceTool, and apply the strictly newer candidate repository.
+- `WindowsSdkDiagnostic`: run only the installer-only Windows SDK component with a 20-minute guard and preserve Visual Studio, Windows SDK, and CAPI2 trust logs for failure analysis.
 - `FullFallback`: reserved for the verified backup/purge/reinstall bootstrap. The harness rejects this scenario until that workflow is implemented.
 
 ## Run
@@ -43,13 +44,24 @@ Automated functional tests install under the Sandbox user profile, disable defau
 
 Use `-GenerateOnly` to inspect the generated configuration without launching Sandbox. Use `-KeepInstalled` only while debugging a running Sandbox.
 
+Run the SDK-only diagnostic with:
+
+```powershell
+.\installer-validation\Invoke-Validation.ps1 `
+  -Scenario WindowsSdkDiagnostic `
+  -CloseExistingSandbox
+```
+
+On the Windows 11 Sandbox 26100 image, the current Microsoft component ID resolves correctly and its nested installer plans 87 MSI packages. The MSI payloads that start complete successfully, but each `msiexec.exe` Software Restriction Policy `WinVerifyTrust` call takes about 120 seconds even though the Microsoft Authenticode chain returns success. The Sandbox starts without a pending reboot and its Defender service is unavailable, so neither an invalid component ID, a reboot requirement, nor Defender real-time scanning explains the delay. This makes the full SDK component unsuitable as a required automated Sandbox gate; keep it installer-only and optional, and use the captured `capi2-operational.evtx` plus `visual-studio-logs` when the Microsoft/Sandbox behavior is retested.
+
 ## Acceptance
 
 - `result.json` reports `passed: true`.
 - `components-after.json` exactly matches the component names and versions in candidate `Updates.xml`; no legacy component may remain.
 - `application-version-after.txt` matches the candidate `PlaygroundCore` version.
+- Qt and pylon runtime files retain their required plugin/subdirectory layout, including `platforms/qwindows.dll`, `pylonCXP/bin/ProducerCXP.cti`, and `stereo-mini/ProducerBaslerStereoMini.cti`.
 - `MSVCBuildTools`, `WindowsSDK`, and `DevelopmentPrerequisitesPayload` are absent from the update repository.
-- Playground remains alive for the smoke-test window.
+- Playground reaches its real main window; an error dialog or merely surviving process is not a successful smoke test.
 - MaintenanceTool reports no update after the candidate is applied.
 
 ## Office Review

@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("CleanInstall", "ComponentUpdate", "ApplicationUpdate", "FullFallback")]
+    [ValidateSet("CleanInstall", "ComponentUpdate", "ApplicationUpdate", "WindowsSdkDiagnostic", "FullFallback")]
     [string]$Scenario = "ComponentUpdate",
 
     [string]$BaselineInstaller,
@@ -41,7 +41,7 @@ function ConvertTo-XmlText {
 if ($Scenario -eq "FullFallback") {
     throw "FullFallback is intentionally disabled until backup/purge/reinstall state preservation is implemented."
 }
-if ($Scenario -in @("ComponentUpdate", "ApplicationUpdate")) {
+if ($Scenario -in @("ComponentUpdate", "ApplicationUpdate", "WindowsSdkDiagnostic")) {
     if (-not $BaselineInstaller) {
         if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
             throw "gh is required to resolve the latest stable baseline automatically."
@@ -68,12 +68,14 @@ if ($Scenario -in @("ComponentUpdate", "ApplicationUpdate")) {
         Write-Host "Using cached stable baseline: $BaselineInstaller"
     }
     $BaselineInstaller = Resolve-RequiredPath $BaselineInstaller "BaselineInstaller"
-    $CandidateRepository = Resolve-RequiredPath $CandidateRepository "CandidateRepository"
-    if (-not (Test-Path (Join-Path $CandidateRepository "Updates.xml"))) {
-        throw "CandidateRepository must contain Updates.xml at its root."
-    }
-    if ($Scenario -eq "ApplicationUpdate") {
-        $ApplicationUnderTest = Resolve-RequiredPath $ApplicationUnderTest "ApplicationUnderTest"
+    if ($Scenario -ne "WindowsSdkDiagnostic") {
+        $CandidateRepository = Resolve-RequiredPath $CandidateRepository "CandidateRepository"
+        if (-not (Test-Path (Join-Path $CandidateRepository "Updates.xml"))) {
+            throw "CandidateRepository must contain Updates.xml at its root."
+        }
+        if ($Scenario -eq "ApplicationUpdate") {
+            $ApplicationUnderTest = Resolve-RequiredPath $ApplicationUnderTest "ApplicationUnderTest"
+        }
     }
 } else {
     $CandidateInstaller = Resolve-RequiredPath $CandidateInstaller "CandidateInstaller"
