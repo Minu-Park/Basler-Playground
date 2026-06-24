@@ -10,7 +10,8 @@ function Invoke-CheckedProcess {
     param(
         [Parameter(Mandatory = $true)][string]$FilePath,
         [string[]]$ArgumentList = @(),
-        [Parameter(Mandatory = $true)][string]$Label
+        [Parameter(Mandatory = $true)][string]$Label,
+        [int]$TimeoutSeconds = 0
     )
     $safeLabel = $Label -replace '[^A-Za-z0-9_.-]', '-'
     $stdoutPath = Join-Path $Output "$safeLabel.stdout.log"
@@ -22,8 +23,20 @@ function Invoke-CheckedProcess {
             $_
         }
     })
-    $process = Start-Process -FilePath $FilePath -ArgumentList $quotedArguments -Wait -PassThru `
-        -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+    if ($TimeoutSeconds -gt 0) {
+        $process = Start-Process -FilePath $FilePath -ArgumentList $quotedArguments -PassThru `
+            -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+        $null = $process.Handle
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            & taskkill.exe /PID $process.Id /T /F | Out-Null
+            throw "$Label timed out after $TimeoutSeconds seconds."
+        }
+        $process.WaitForExit()
+    } else {
+        $process = Start-Process -FilePath $FilePath -ArgumentList $quotedArguments -Wait -PassThru `
+            -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+    }
+    $process.Refresh()
     if ($process.ExitCode -ne 0) {
         $detailLines = @()
         $detailLines += Get-Content $stderrPath -Tail 20 -ErrorAction SilentlyContinue
@@ -60,11 +73,48 @@ function Assert-ApplicationSmoke {
         throw "Playground.exe was not found after installation."
     }
     $process = Start-Process -FilePath $application -WorkingDirectory (Split-Path $application -Parent) -PassThru
-    Start-Sleep -Seconds 10
-    if ($process.HasExited) {
-        throw "Playground exited during the smoke-test window with code $($process.ExitCode)."
+    $deadline = [DateTime]::UtcNow.AddSeconds(20)
+    $ready = $false
+    while ([DateTime]::UtcNow -lt $deadline) {
+        $process.Refresh()
+        if ($process.HasExited) {
+            break
+        }
+        if ($process.MainWindowHandle -ne 0 -and $process.MainWindowTitle -in @("Playground", "Basler Playground")) {
+            $ready = $true
+            break
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    if (-not $ready) {
+        $detail = if ($process.HasExited) {
+            "exited with code $($process.ExitCode)"
+        } else {
+            "showed unexpected window '$($process.MainWindowTitle)'"
+        }
+        if (-not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force
+        }
+        throw "Playground did not reach its main window during the smoke test: $detail."
     }
     Stop-Process -Id $process.Id -Force
+}
+
+function Assert-RuntimeLayout {
+    param([string]$InstallRoot)
+    $requiredPaths = @(
+        "Qt6OpenGLWidgets.dll",
+        "platforms\qwindows.dll",
+        "styles\qmodernwindowsstyle.dll",
+        "pylonCXP\bin\ProducerCXP.cti",
+        "stereo-mini\ProducerBaslerStereoMini.cti"
+    )
+    $missingPaths = @($requiredPaths | Where-Object {
+        -not (Test-Path (Join-Path $InstallRoot $_))
+    })
+    if ($missingPaths.Count -gt 0) {
+        throw "Installed runtime layout is incomplete: $($missingPaths -join ', ')."
+    }
 }
 
 function Get-ExpectedComponents {
@@ -184,13 +234,26 @@ try {
             throw "Installed application version mismatch: expected $expectedApplicationVersion, found $installedProductVersion."
         }
 
+        Assert-RuntimeLayout $installRoot
         Assert-ApplicationSmoke $installRoot
         Assert-NoUpdates $maintenanceTool $repositoryUri
     } elseif ($settings.scenario -eq "CleanInstall") {
         Invoke-CheckedProcess $settings.candidateInstaller ($installOptions + @("install", "PlaygroundCore")) "Candidate installation"
         $after = Get-InstalledComponents $installRoot
         $after | ConvertTo-Json | Set-Content (Join-Path $Output "components-after.json") -Encoding UTF8
+        Assert-RuntimeLayout $installRoot
         Assert-ApplicationSmoke $installRoot
+    } elseif ($settings.scenario -eq "WindowsSdkDiagnostic") {
+        & wevtutil.exe sl Microsoft-Windows-CAPI2/Operational /e:true
+        $result.rebootPendingBeforeSdk = [bool](
+            (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") -or
+            (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired")
+        )
+        Invoke-CheckedProcess $settings.baselineInstaller ($installOptions + @("install", "DevelopmentPrerequisites.WindowsSDK")) "Windows SDK installation" 1200
+        $result.sdkDetected = Test-Path "C:\Program Files (x86)\Windows Kits\10\Include\*\um\Windows.h"
+        if (-not $result.sdkDetected) {
+            throw "Windows SDK installer returned success but Windows.h was not detected."
+        }
     } else {
         throw "Unsupported scenario: $($settings.scenario)"
     }
@@ -205,6 +268,24 @@ catch {
     Write-Error $_
 }
 finally {
+    if ($settings -and $settings.scenario -eq "WindowsSdkDiagnostic") {
+        $vsLogRoot = Join-Path $Output "visual-studio-logs"
+        New-Item -ItemType Directory -Force -Path $vsLogRoot | Out-Null
+        foreach ($logSource in @($env:TEMP, "C:\Windows\Temp")) {
+            Get-ChildItem $logSource -Recurse -File -ErrorAction SilentlyContinue | Where-Object {
+                $_.Name -like "dd_*" -or $_.FullName -match "[\\/]windowssdk[\\/]"
+            } | ForEach-Object {
+                $destination = Join-Path $vsLogRoot ((Split-Path $_.DirectoryName -Leaf) + "-" + $_.Name)
+                Copy-Item -LiteralPath $_.FullName -Destination $destination -Force -ErrorAction SilentlyContinue
+            }
+        }
+        Get-ChildItem "C:\ProgramData\Microsoft\VisualStudio\Packages\_Instances" -Recurse -File -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination $vsLogRoot -Force -ErrorAction SilentlyContinue
+        }
+        & wevtutil.exe epl Microsoft-Windows-CAPI2/Operational (Join-Path $Output "capi2-operational.evtx") /ow:true
+        & wevtutil.exe qe Microsoft-Windows-CAPI2/Operational /f:text /rd:true /c:200 /uni:false 2>&1 |
+            Set-Content (Join-Path $Output "capi2-operational.txt") -Encoding UTF8
+    }
     $result.finishedAt = (Get-Date).ToUniversalTime().ToString("o")
     $result | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $Output "result.json") -Encoding UTF8
     Stop-Transcript | Out-Null
