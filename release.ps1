@@ -60,6 +60,24 @@ function New-HardLinkedDirectory {
     }
 }
 
+function Get-ReleaseNotesForTag {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Tag
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+    $document = Get-Content $Path -Raw
+    $pattern = "(?ms)^#\s+$([regex]::Escape($Tag))\s*\r?\n(?<body>.*?)(?=^#\s+v\d|\z)"
+    $match = [regex]::Match($document, $pattern)
+    if (-not $match.Success) {
+        return $null
+    }
+    return $match.Groups["body"].Value.Trim()
+}
+
 Require-Command git
 Require-Command gh
 
@@ -275,6 +293,12 @@ $releaseAssets = @(
     $metadataOut
 )
 $releaseNotes = "Installer built from private Playground tag $PlaygroundTag ($commit)."
+$routedReleaseNotes = Get-ReleaseNotesForTag (Join-Path $checkout "RELEASE_NOTES.md") $PlaygroundTag
+if ($routedReleaseNotes) {
+    $releaseNotes = $routedReleaseNotes
+}
+$releaseNotesOut = Join-Path $dist "release-notes.md"
+[System.IO.File]::WriteAllText($releaseNotesOut, $releaseNotes, $utf8NoBom)
 $releaseTypeArguments = @()
 if ($isPrerelease) {
     $releaseTypeArguments += "--prerelease"
@@ -294,11 +318,11 @@ if ($releaseExists) {
     Invoke-NativeCommand gh (@(
         "release", "edit", $PlaygroundTag,
         "--title", "Basler Playground $PlaygroundTag",
-        "--notes", $releaseNotes
+        "--notes-file", $releaseNotesOut
     ) + $releaseTypeArguments) "Failed to update release metadata for $PlaygroundTag"
 } else {
     Invoke-NativeCommand gh (@("release", "create", $PlaygroundTag) + $releaseAssets + @(
         "--title", "Basler Playground $PlaygroundTag",
-        "--notes", $releaseNotes
+        "--notes-file", $releaseNotesOut
     ) + $releaseTypeArguments + @("--draft")) "Failed to create draft release for $PlaygroundTag"
 }
