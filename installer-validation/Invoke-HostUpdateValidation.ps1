@@ -1,6 +1,7 @@
 param(
-    [string]$PlaygroundRoot = "C:\Users\minwoo\Documents\Playground-ifw-components",
-    [string]$MetadataUrl = "https://github.com/Minu-Park/Basler-Playground/releases/download/updater-validation-v0.1.3-20260624/latest.json",
+    [string]$PlaygroundRoot = "C:\Users\minwoo\Documents\Playground",
+    [string]$MetadataUrl = "https://github.com/Minu-Park/Basler-Playground/releases/download/beta-channel/latest-beta.json",
+    [string]$CandidateVersion = "0.1.3-beta.1",
     [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "BaslerPlaygroundUpdaterValidation"),
     [string]$ReleaseRepository = "Minu-Park/Basler-Playground"
 )
@@ -29,14 +30,14 @@ if (Test-Path $InstallRoot) {
 }
 
 $PlaygroundRoot = (Resolve-Path $PlaygroundRoot).Path
-$probe = Join-Path $PlaygroundRoot "build/installer-validation/app-probe-0.1.2/Playground.exe"
-$candidateRepository = Join-Path $PlaygroundRoot "build/installer-validation/repository-0.1.3"
-if (-not (Test-Path $probe) -or -not (Test-Path (Join-Path $candidateRepository "Updates.xml"))) {
-    throw "Run Invoke-ApplicationUpdateValidation.ps1 first to prepare the probe and candidate repository."
-}
-
 $release = gh release view --repo $ReleaseRepository --json tagName,assets | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) { throw "Failed to resolve the stable baseline release." }
+$baselineVersion = $release.tagName.TrimStart("v")
+$probe = Join-Path $PlaygroundRoot "build/installer-validation/app-probe-$baselineVersion/Playground.exe"
+$candidateRepository = Join-Path $PlaygroundRoot "build/installer-validation/repository-$CandidateVersion"
+if (-not (Test-Path $probe) -or -not (Test-Path (Join-Path $candidateRepository "Updates.xml"))) {
+    throw "Run Invoke-ApplicationUpdateValidation.ps1 -CandidateVersion $CandidateVersion first."
+}
 $asset = @($release.assets | Where-Object { $_.name -match 'windows-x64\.exe$' -and $_.name -notmatch '\.sha256$' }) | Select-Object -First 1
 if (-not $asset) { throw "Stable release has no Windows x64 installer." }
 $cacheRoot = Join-Path (Split-Path $PSScriptRoot -Parent) "build/installer-validation/cache/$($release.tagName)"
@@ -86,7 +87,9 @@ try {
 
     $productVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $InstallRoot "Playground.exe")).ProductVersion
     $productVersion | Set-Content (Join-Path $runRoot "application-version-after.txt") -Encoding UTF8
-    if ($productVersion -notmatch '^0\.1\.3(?:\.|$)') { throw "Updated executable version is not 0.1.3: $productVersion" }
+    if ($productVersion -ne $CandidateVersion) {
+        throw "Updated executable version is not ${CandidateVersion}: $productVersion"
+    }
 
     Remove-Item Env:\PLAYGROUND_UPDATE_TEST_METADATA_URL,Env:\PLAYGROUND_UPDATE_TEST_RESULT,Env:\PLAYGROUND_UPDATE_TEST_AUTO_APPLY -ErrorAction SilentlyContinue
     $smoke = Start-Process -FilePath (Join-Path $InstallRoot "Playground.exe") -WorkingDirectory $InstallRoot -PassThru

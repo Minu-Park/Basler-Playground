@@ -7,6 +7,8 @@ param(
 
     [string]$PlaygroundRepo = "git@github.com:minu-park/playground.git",
 
+    [string]$ReleaseRepository = "Minu-Park/Basler-Playground",
+
     [int]$UpdateEpoch = 2,
 
     [switch]$ForceFullInstaller
@@ -83,25 +85,62 @@ Require-Command gh
 
 Invoke-NativeCommand gh @("auth", "status") "GitHub CLI authentication check failed" | Out-Null
 
-if ($PlaygroundTag -notmatch '^v\d+\.\d+\.\d+([-.][0-9A-Za-z.-]+)?$') {
-    throw "PlaygroundTag must look like vX.Y.Z."
+if ($PlaygroundTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.([1-9][0-9]*))?$') {
+    throw "PlaygroundTag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N."
 }
 if ($UpdateEpoch -lt 1) {
     throw "UpdateEpoch must be a positive integer."
 }
-$packageVersion = [regex]::Match($PlaygroundTag, '^v(\d+\.\d+\.\d+)').Groups[1].Value
+$packageVersion = $Matches[1]
+$betaRevision = $Matches[2]
+if ($betaRevision -and [int64]$betaRevision -gt 999998) {
+    throw "The beta revision must be between 1 and 999998."
+}
+$displayVersion = $PlaygroundTag.Substring(1)
+$isPrerelease = [bool]$betaRevision
+$channel = if ($isPrerelease) { "beta" } else { "stable" }
+$ifwVersion = if ($isPrerelease) { "$packageVersion.$betaRevision" } else { "$packageVersion.999999" }
+
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "SilentlyContinue"
+    $releaseJson = gh release view $PlaygroundTag --repo $ReleaseRepository --json isDraft 2>$null
+    $releaseExists = $LASTEXITCODE -eq 0
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+if ($releaseExists) {
+    $releaseState = $releaseJson | ConvertFrom-Json
+    if (-not $releaseState.isDraft) {
+        throw "Release $PlaygroundTag is already published. Published release assets are immutable; create a new version."
+    }
+}
 
 $root = $PSScriptRoot
 $checkout = Join-Path $root "playground"
 
-if (-not (Test-Path $checkout)) {
+if (Test-Path $checkout) {
+    $existingCheckoutStatus = @(Invoke-NativeCommand git @(
+        "-C", $checkout, "status", "--porcelain", "--untracked-files=all"
+    ) "Failed to inspect the existing Playground release checkout")
+    if ($existingCheckoutStatus.Count -gt 0) {
+        throw "Playground release checkout contains local or untracked source changes. Preserve or remove them before packaging."
+    }
+} else {
     Invoke-NativeCommand git @("clone", "--filter=blob:none", $PlaygroundRepo, $checkout) "Failed to clone Playground"
 }
 
-Invoke-NativeCommand git @("-C", $checkout, "fetch", "--force", "--tags", "origin") "Failed to fetch Playground tags from origin"
-Invoke-NativeCommand git @("-C", $checkout, "checkout", "--force", $PlaygroundTag) "Failed to check out Playground tag $PlaygroundTag"
+Invoke-NativeCommand git @("-C", $checkout, "fetch", "--prune", "--tags", "origin") "Failed to fetch Playground tags from origin"
+Invoke-NativeCommand git @("-C", $checkout, "checkout", "--detach", $PlaygroundTag) "Failed to check out Playground tag $PlaygroundTag"
 # Initialize Playground's own private/internal submodules after the tag checkout.
 Invoke-NativeCommand git @("-C", $checkout, "submodule", "update", "--init", "--recursive") "Failed to initialize Playground submodules"
+$checkoutStatus = @(Invoke-NativeCommand git @(
+    "-C", $checkout, "status", "--porcelain", "--untracked-files=all"
+) "Failed to verify the Playground release checkout")
+if ($checkoutStatus.Count -gt 0) {
+    throw "Playground release checkout is not clean after selecting $PlaygroundTag. Remove local or untracked source changes before packaging."
+}
 
 $pylonPath = Join-Path $root "pylon"
 if (Test-Path $pylonPath) {
@@ -133,12 +172,21 @@ finally {
 $dist = Join-Path $root "dist"
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
-$expectedInstallerName = "Basler Playground-$packageVersion-win64-release.exe"
+$expectedInstallerName = "Basler Playground-$displayVersion-win64-release.exe"
 $expectedInstallerPath = Join-Path $checkout "build/bundle/$expectedInstallerName"
 $installer = Get-Item $expectedInstallerPath -ErrorAction SilentlyContinue
 
 if (-not $installer) {
     throw "Expected installer not found: $expectedInstallerPath"
+}
+$packagedApplicationPath = Join-Path $checkout "build/bundle/Release/Playground.exe"
+if (-not (Test-Path $packagedApplicationPath)) {
+    throw "Packaged application executable not found: $packagedApplicationPath"
+}
+$applicationProductVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo(
+    $packagedApplicationPath).ProductVersion
+if ($applicationProductVersion -ne $displayVersion) {
+    throw "Packaged application version mismatch: expected $displayVersion, found $applicationProductVersion."
 }
 
 $installerName = "BaslerPlayground-$PlaygroundTag-windows-x64.exe"
@@ -153,7 +201,7 @@ $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     $utf8NoBom
 )
 
-$ifwPackageName = "Basler Playground-$packageVersion-win64-release"
+$ifwPackageName = "Basler Playground-$displayVersion-win64-release"
 $ifwTempPath = Join-Path $checkout "build/bundle/_CPack_Packages/win64/IFW/$ifwPackageName"
 $ifwTempDir = Get-Item $ifwTempPath -ErrorAction SilentlyContinue
 
@@ -230,6 +278,12 @@ $missingPackages = @($updateComponents | Where-Object { $_ -notin $updatePackage
 if ($unexpectedPackages.Count -gt 0 -or $missingPackages.Count -gt 0) {
     throw "Update repository component mismatch. Unexpected: $($unexpectedPackages -join ', '); missing: $($missingPackages -join ', ')."
 }
+$coreUpdate = @($updatesXml.Updates.PackageUpdate | Where-Object {
+    [string]$_.Name -eq "PlaygroundCore"
+}) | Select-Object -First 1
+if (-not $coreUpdate -or [string]$coreUpdate.Version -ne $ifwVersion) {
+    throw "PlaygroundCore IFW version mismatch: expected $ifwVersion, found $([string]$coreUpdate.Version)."
+}
 
 $repositoryZipName = "BaslerPlayground-$PlaygroundTag-ifw-repository.zip"
 $repositoryZipOut = Join-Path $dist $repositoryZipName
@@ -243,9 +297,6 @@ if (-not (Test-Path $repositoryZipOut)) {
 $repositoryZipHash = Get-FileHash $repositoryZipOut -Algorithm SHA256
 
 $commit = (Invoke-NativeCommand git @("-C", $checkout, "rev-parse", "HEAD") "Failed to resolve the Playground commit" | Select-Object -Last 1).Trim()
-$version = $PlaygroundTag.Substring(1)
-$isPrerelease = $PlaygroundTag.Contains("-")
-$channel = if ($isPrerelease) { "prerelease" } else { "stable" }
 $releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
 $installerUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
 $repositoryZipUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$repositoryZipName"
@@ -255,7 +306,7 @@ if ($routedReleaseNotes) {
     $releaseNotes = $routedReleaseNotes
 }
 $metadata = [ordered]@{
-    version = $version
+    version = $displayVersion
     tag = $PlaygroundTag
     channel = $channel
     publishedAt = (Get-Date).ToUniversalTime().ToString("o")
@@ -273,6 +324,7 @@ $metadata = [ordered]@{
     )
     update = [ordered]@{
         epoch = $UpdateEpoch
+        ifwVersion = $ifwVersion
         forceFullInstaller = [bool]$ForceFullInstaller
     }
     playgroundCommit = $commit
@@ -285,7 +337,8 @@ if (-not $ForceFullInstaller) {
     }
 }
 
-$metadataOut = Join-Path $dist "latest.json"
+$metadataFileName = if ($isPrerelease) { "latest-beta.json" } else { "latest.json" }
+$metadataOut = Join-Path $dist $metadataFileName
 [System.IO.File]::WriteAllText(
     $metadataOut,
     ($metadata | ConvertTo-Json -Depth 6),
@@ -305,24 +358,22 @@ if ($isPrerelease) {
     $releaseTypeArguments += "--prerelease"
 }
 
-$previousErrorActionPreference = $ErrorActionPreference
-try {
-    $ErrorActionPreference = "SilentlyContinue"
-    gh release view $PlaygroundTag 2>$null | Out-Null
-    $releaseExists = $LASTEXITCODE -eq 0
-}
-finally {
-    $ErrorActionPreference = $previousErrorActionPreference
-}
 if ($releaseExists) {
-    Invoke-NativeCommand gh (@("release", "upload", $PlaygroundTag) + $releaseAssets + @("--clobber")) "Failed to upload release assets for $PlaygroundTag"
+    Invoke-NativeCommand gh (@(
+        "release", "upload", $PlaygroundTag,
+        "--repo", $ReleaseRepository
+    ) + $releaseAssets + @("--clobber")) "Failed to upload release assets for $PlaygroundTag"
     Invoke-NativeCommand gh (@(
         "release", "edit", $PlaygroundTag,
+        "--repo", $ReleaseRepository,
         "--title", "Basler Playground $PlaygroundTag",
         "--notes-file", $releaseNotesOut
     ) + $releaseTypeArguments) "Failed to update release metadata for $PlaygroundTag"
 } else {
-    Invoke-NativeCommand gh (@("release", "create", $PlaygroundTag) + $releaseAssets + @(
+    Invoke-NativeCommand gh (@(
+        "release", "create", $PlaygroundTag,
+        "--repo", $ReleaseRepository
+    ) + $releaseAssets + @(
         "--title", "Basler Playground $PlaygroundTag",
         "--notes-file", $releaseNotesOut
     ) + $releaseTypeArguments + @("--draft")) "Failed to create draft release for $PlaygroundTag"

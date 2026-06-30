@@ -4,9 +4,9 @@ This is a standalone Windows Sandbox harness for repeatable Qt Installer Framewo
 
 ## Scenarios
 
-- `CleanInstall`: install a candidate offline installer, verify IFW state, smoke-start Playground, and purge it.
-- `ComponentUpdate`: install a baseline, invoke MaintenanceTool against a candidate raw repository, verify every repository component version, require installer-only prerequisites to stay out of the repository, smoke-start Playground, require a no-update result, and purge it.
-- `ApplicationUpdate`: replace only the installed baseline executable with a test-hook build of the same version, fetch local `latest.json` through `UpdateChecker`, traverse the application's Install Update callback, run MaintenanceTool, and apply the strictly newer candidate repository.
+- `CleanInstall`: install a candidate offline installer, verify IFW state and Windows registered size, smoke-start Playground, and purge it.
+- `ComponentUpdate`: install a baseline, seed a stale 5 MiB Windows registered size, invoke MaintenanceTool against a candidate raw repository, verify every repository component version and repaired registered size, require installer-only prerequisites to stay out of the repository, smoke-start Playground, require a no-update result, and purge it.
+- `ApplicationUpdate`: replace only the installed baseline executable with a beta-channel test probe, fetch local metadata through `UpdateChecker`, download and SHA256-verify a repository ZIP, traverse the Install Update callback, and apply the ordered candidate repository.
 - `WindowsSdkDiagnostic`: run only the installer-only Windows SDK component with a 20-minute guard and preserve Visual Studio, Windows SDK, and CAPI2 trust logs for failure analysis.
 - `FullFallback`: reserved for the verified backup/purge/reinstall bootstrap. The harness rejects this scenario until that workflow is implemented.
 
@@ -20,7 +20,7 @@ Run the complete application-path gate from the Basler-Playground wrapper checko
   -CloseExistingSandbox
 ```
 
-The wrapper resolves the latest stable numeric tag, uses the next patch version as the candidate, builds a same-version application probe with test hooks, builds and packages the newer candidate with test hooks disabled, creates a filtered hard-linked repository, runs `ApplicationUpdate`, and rebuilds with production updater options before returning. Pass `-CandidateVersion MAJOR.MINOR.PATCH` when the next release version is not a patch increment.
+The wrapper resolves the latest stable tag and defaults to the next patch `beta.1`. It builds a same-version beta-channel probe with test hooks, packages the candidate with hooks disabled, verifies display and IFW versions separately, runs `ApplicationUpdate`, and restores production updater options. Pass `-CandidateVersion MAJOR.MINOR.PATCH-beta.N` or a final stable version to select another candidate.
 
 Run only the IFW engine layer when a candidate repository already exists:
 
@@ -58,7 +58,8 @@ On the Windows 11 Sandbox 26100 image, the current Microsoft component ID resolv
 
 - `result.json` reports `passed: true`.
 - `components-after.json` exactly matches the component names and versions in candidate `Updates.xml`; no legacy component may remain.
-- `application-version-after.txt` matches the candidate `PlaygroundCore` version.
+- `application-version-after.txt` matches the canonical candidate display version; `components-after.json` retains the ordered IFW version.
+- `registered-size-after.json` keeps Windows `EstimatedSize` within 10% of the installed file total.
 - Qt and pylon runtime files retain their required plugin/subdirectory layout, including `platforms/qwindows.dll`, `pylonCXP/bin/ProducerCXP.cti`, and `stereo-mini/ProducerBaslerStereoMini.cti`.
 - `MSVCBuildTools`, `WindowsSDK`, and `DevelopmentPrerequisitesPayload` are absent from the update repository.
 - Playground reaches its real main window; an error dialog or merely surviving process is not a successful smoke test.
@@ -80,7 +81,7 @@ Run the isolated host test without modifying the normal Playground installation:
   -PlaygroundRoot C:\Users\minwoo\Documents\Playground-ifw-components
 ```
 
-It installs the stable baseline under `%LOCALAPPDATA%\BaslerPlaygroundUpdaterValidation`, reads validation metadata from the public prerelease, downloads and verifies `repository.zip` over HTTPS through the application, updates to virtual `0.1.3`, verifies the exact component set, executable version, smoke startup, and final no-update result, then purges the isolated installation. It refuses to reuse an existing validation directory. This host gate does not prove Program Files elevation; the visible UAC test remains manual.
+It installs the stable baseline under `%LOCALAPPDATA%\BaslerPlaygroundUpdaterValidation`, reads the public beta-channel metadata, verifies the repository over HTTPS, checks the exact component set and canonical executable version, smoke-starts, requires no remaining updates, and purges the isolated installation. It refuses to reuse an existing validation directory. This host gate does not prove Program Files elevation; the visible UAC test remains manual.
 
 For the final visible Program Files and UAC gate, run:
 
@@ -88,7 +89,7 @@ For the final visible Program Files and UAC gate, run:
 .\installer-validation\Start-ProgramFilesUpdateValidation.ps1
 ```
 
-Approve the fixture-install UAC prompt, then choose **Help > Check for Updates... > Install Update** and approve the updater UAC prompt. Confirm version `0.1.3`, then remove only the isolated fixture with:
+Approve the fixture-install UAC prompt, then choose **Help > Check for Updates... > Install Update** and approve the updater UAC prompt. Confirm the beta-channel version, then remove only the isolated fixture with:
 
 ```powershell
 .\installer-validation\Start-ProgramFilesUpdateValidation.ps1 -Cleanup

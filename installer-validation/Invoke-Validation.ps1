@@ -10,6 +10,11 @@ param(
 
     [string]$ApplicationUnderTest,
 
+    [string]$CandidateDisplayVersion,
+
+    [ValidateSet("stable", "beta")]
+    [string]$CandidateChannel,
+
     [string]$InstallRoot = "C:\Users\WDAGUtilityAccount\PlaygroundValidation",
 
     [string]$ReleaseRepository = "Minu-Park/basler-playground",
@@ -40,6 +45,16 @@ function ConvertTo-XmlText {
 
 if ($Scenario -eq "FullFallback") {
     throw "FullFallback is intentionally disabled until backup/purge/reinstall state preservation is implemented."
+}
+if ($CandidateDisplayVersion) {
+    if ($CandidateDisplayVersion -notmatch '^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-beta\.[1-9][0-9]*)?$') {
+        throw "CandidateDisplayVersion is not a canonical Playground version."
+    }
+    $derivedChannel = if ($CandidateDisplayVersion.Contains("-beta.")) { "beta" } else { "stable" }
+    if ($CandidateChannel -and $CandidateChannel -ne $derivedChannel) {
+        throw "CandidateChannel does not match CandidateDisplayVersion."
+    }
+    $CandidateChannel = $derivedChannel
 }
 if ($Scenario -in @("ComponentUpdate", "ApplicationUpdate", "WindowsSdkDiagnostic")) {
     if (-not $BaselineInstaller) {
@@ -110,6 +125,8 @@ $scenarioConfig = [ordered]@{
     candidateInstaller = if ($CandidateInstaller) { "C:\ValidationInput\Candidate\$(Split-Path $CandidateInstaller -Leaf)" } else { $null }
     candidateRepository = if ($CandidateRepository) { "C:\ValidationInput\Repository" } else { $null }
     applicationUnderTest = if ($ApplicationUnderTest) { "C:\ValidationInput\Application\$(Split-Path $ApplicationUnderTest -Leaf)" } else { $null }
+    candidateDisplayVersion = $CandidateDisplayVersion
+    candidateChannel = $CandidateChannel
     testMetadataUrl = if ($Scenario -eq "ApplicationUpdate") { "file:///C:/ValidationConfig/latest.json" } else { $null }
     testResultPath = if ($Scenario -eq "ApplicationUpdate") { "C:\ValidationResults\app-update-exit.txt" } else { $null }
 }
@@ -125,12 +142,30 @@ if ($Scenario -eq "ApplicationUpdate") {
     if (-not $corePackage) {
         throw "CandidateRepository does not contain PlaygroundCore."
     }
+    if (-not $CandidateDisplayVersion -or -not $CandidateChannel) {
+        throw "ApplicationUpdate requires CandidateDisplayVersion and CandidateChannel."
+    }
+    $repositoryArchive = Join-Path $configRoot "repository.zip"
+    Compress-Archive -Path (Join-Path $CandidateRepository "*") `
+        -DestinationPath $repositoryArchive -CompressionLevel NoCompression -Force
+    if (-not (Test-Path $repositoryArchive)) {
+        throw "Failed to create the application-update repository archive."
+    }
+    $repositoryArchiveHash = (Get-FileHash $repositoryArchive -Algorithm SHA256).Hash.ToLowerInvariant()
     $metadata = [ordered]@{
-        version = [string]$corePackage.Version
-        tag = "validation-$([string]$corePackage.Version)"
-        channel = "validation"
-        update = [ordered]@{ epoch = 2; forceFullInstaller = $false }
-        repository = [ordered]@{ url = "file:///C:/ValidationInput/Repository" }
+        version = $CandidateDisplayVersion
+        tag = "v$CandidateDisplayVersion"
+        channel = $CandidateChannel
+        update = [ordered]@{
+            epoch = 2
+            ifwVersion = [string]$corePackage.Version
+            forceFullInstaller = $false
+        }
+        repositoryZip = [ordered]@{
+            fileName = "repository.zip"
+            url = "file:///C:/ValidationConfig/repository.zip"
+            sha256 = $repositoryArchiveHash
+        }
     }
     [System.IO.File]::WriteAllText(
         (Join-Path $configRoot "latest.json"),

@@ -63,6 +63,84 @@ function Get-InstalledComponents {
     return $result
 }
 
+function Get-UninstallRegistrations {
+    param([string]$InstallRoot)
+    $expectedLocation = [System.IO.Path]::GetFullPath($InstallRoot).TrimEnd('\')
+    $roots = @(
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+        "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall",
+        "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall"
+    )
+    $matches = @()
+    foreach ($root in $roots) {
+        if (-not (Test-Path $root)) { continue }
+        foreach ($key in Get-ChildItem $root) {
+            $entry = Get-ItemProperty $key.PSPath -ErrorAction SilentlyContinue
+            if ($entry.DisplayName -ne "Basler Playground" -or -not $entry.InstallLocation) { continue }
+            try {
+                $entryLocation = [System.IO.Path]::GetFullPath([string]$entry.InstallLocation).TrimEnd('\')
+            }
+            catch {
+                continue
+            }
+            if ($entryLocation -ieq $expectedLocation) {
+                $matches += $entry
+            }
+        }
+    }
+    return $matches
+}
+
+function Assert-RegisteredProductVersion {
+    param([string]$InstallRoot, [string]$ExpectedVersion)
+    $registrations = @(Get-UninstallRegistrations $InstallRoot)
+    if ($registrations.Count -eq 0) {
+        throw "Windows uninstall registration was not found for $InstallRoot."
+    }
+    $versions = @($registrations | ForEach-Object { [string]$_.DisplayVersion } | Sort-Object -Unique)
+    $versions | Set-Content (Join-Path $Output "registered-version-after.txt") -Encoding UTF8
+    $unexpected = @($versions | Where-Object { $_ -ne $ExpectedVersion })
+    if ($unexpected.Count -gt 0) {
+        throw "Windows uninstall DisplayVersion mismatch: expected $ExpectedVersion, found $($unexpected -join ', ')."
+    }
+}
+
+function Assert-RegisteredProductSize {
+    param([string]$InstallRoot)
+    $registrations = @(Get-UninstallRegistrations $InstallRoot)
+    if ($registrations.Count -eq 0) {
+        throw "Windows uninstall registration was not found for $InstallRoot."
+    }
+    $actualBytes = [int64](Get-ChildItem -LiteralPath $InstallRoot -Recurse -File -Force |
+        Measure-Object -Property Length -Sum).Sum
+    $actualKiB = [int64][Math]::Ceiling($actualBytes / 1KB)
+    $registeredKiB = @($registrations | ForEach-Object { [int64]$_.EstimatedSize })
+    [ordered]@{
+        actualBytes = $actualBytes
+        actualKiB = $actualKiB
+        registeredKiB = $registeredKiB
+    } | ConvertTo-Json | Set-Content (Join-Path $Output "registered-size-after.json") -Encoding UTF8
+
+    $minimumKiB = [int64][Math]::Floor($actualKiB * 0.9)
+    $maximumKiB = [int64][Math]::Ceiling($actualKiB * 1.1)
+    $invalidSizes = @($registeredKiB | Where-Object { $_ -lt $minimumKiB -or $_ -gt $maximumKiB })
+    if ($invalidSizes.Count -gt 0) {
+        throw "Windows uninstall EstimatedSize mismatch: actual $actualKiB KiB, registered $($registeredKiB -join ', ') KiB."
+    }
+}
+
+function Set-StaleRegisteredProductSizeFixture {
+    param([string]$InstallRoot)
+    $registrations = @(Get-UninstallRegistrations $InstallRoot)
+    if ($registrations.Count -eq 0) {
+        throw "Windows uninstall registration was not found for $InstallRoot."
+    }
+    foreach ($registration in $registrations) {
+        New-ItemProperty -Path $registration.PSPath -Name EstimatedSize `
+            -Value 5120 -PropertyType DWord -Force | Out-Null
+    }
+}
+
 function Assert-ApplicationSmoke {
     param([string]$InstallRoot)
     $application = @(
@@ -187,6 +265,7 @@ try {
         if (-not (Test-Path $maintenanceTool)) {
             throw "MaintenanceTool.exe was not installed."
         }
+        Set-StaleRegisteredProductSizeFixture $installRoot
         $repositoryUri = [System.Uri]::new($settings.candidateRepository).AbsoluteUri
         $expected = Get-ExpectedComponents $settings.candidateRepository
 
@@ -229,10 +308,15 @@ try {
         $installedApplication = Join-Path $installRoot "Playground.exe"
         $installedProductVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($installedApplication).ProductVersion
         $installedProductVersion | Set-Content (Join-Path $Output "application-version-after.txt") -Encoding UTF8
-        $expectedApplicationVersion = [string]$expected["PlaygroundCore"]
-        if (-not $expectedApplicationVersion -or $installedProductVersion -notmatch "^$([regex]::Escape($expectedApplicationVersion))(?:\.|$)") {
+        $expectedApplicationVersion = [string]$settings.candidateDisplayVersion
+        if (-not $expectedApplicationVersion) {
+            throw "Candidate display version is missing from the validation scenario."
+        }
+        if ($installedProductVersion -ne $expectedApplicationVersion) {
             throw "Installed application version mismatch: expected $expectedApplicationVersion, found $installedProductVersion."
         }
+        Assert-RegisteredProductVersion $installRoot $expectedApplicationVersion
+        Assert-RegisteredProductSize $installRoot
 
         Assert-RuntimeLayout $installRoot
         Assert-ApplicationSmoke $installRoot
@@ -241,6 +325,13 @@ try {
         Invoke-CheckedProcess $settings.candidateInstaller ($installOptions + @("install", "PlaygroundCore")) "Candidate installation"
         $after = Get-InstalledComponents $installRoot
         $after | ConvertTo-Json | Set-Content (Join-Path $Output "components-after.json") -Encoding UTF8
+        $installedApplication = Join-Path $installRoot "Playground.exe"
+        $installedProductVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($installedApplication).ProductVersion
+        if ($settings.candidateDisplayVersion -and $installedProductVersion -ne [string]$settings.candidateDisplayVersion) {
+            throw "Installed application version mismatch: expected $($settings.candidateDisplayVersion), found $installedProductVersion."
+        }
+        Assert-RegisteredProductVersion $installRoot $installedProductVersion
+        Assert-RegisteredProductSize $installRoot
         Assert-RuntimeLayout $installRoot
         Assert-ApplicationSmoke $installRoot
     } elseif ($settings.scenario -eq "WindowsSdkDiagnostic") {
