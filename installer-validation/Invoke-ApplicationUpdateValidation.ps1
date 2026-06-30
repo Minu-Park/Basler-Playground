@@ -22,21 +22,28 @@ if ($LASTEXITCODE -ne 0 -or $release.tagName -notmatch '^v?(\d+)\.(\d+)\.(\d+)$'
 }
 $baselineVersion = "$($Matches[1]).$($Matches[2]).$($Matches[3])"
 if (-not $CandidateVersion) {
-    $CandidateVersion = "$($Matches[1]).$($Matches[2]).$([int]$Matches[3] + 1)"
+    $CandidateVersion = "$($Matches[1]).$($Matches[2]).$([int]$Matches[3] + 1)-beta.1"
 }
-if ($CandidateVersion -notmatch '^\d+\.\d+\.\d+$') {
-    throw "CandidateVersion must be MAJOR.MINOR.PATCH."
+if ($CandidateVersion -notmatch '^((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.([1-9][0-9]*))?$') {
+    throw "CandidateVersion must be MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-beta.N."
 }
-if ([version]$CandidateVersion -le [version]$baselineVersion) {
+$candidateCoreVersion = $Matches[1]
+$candidateChannel = if ($Matches[2]) { "beta" } else { "stable" }
+if ($Matches[2] -and [int64]$Matches[2] -gt 999998) {
+    throw "The beta revision must be between 1 and 999998."
+}
+if ([version]$candidateCoreVersion -le [version]$baselineVersion) {
     throw "CandidateVersion must be newer than the stable baseline $baselineVersion."
 }
 
 function Invoke-Configure {
-    param([string]$Version, [bool]$EnableHooks)
+    param([string]$Version, [bool]$EnableHooks, [string]$Channel = "auto")
     $hookValue = if ($EnableHooks) { "ON" } else { "OFF" }
     & cmake -S $PlaygroundRoot -B $buildRoot `
         "-DPLAYGROUND_ENABLE_UPDATE_TEST_HOOKS:BOOL=$hookValue" `
-        "-DPLAYGROUND_VERSION_OVERRIDE:STRING=$Version"
+        "-DPLAYGROUND_VERSION_OVERRIDE:STRING=$Version" `
+        "-DPLAYGROUND_UPDATE_CHANNEL:STRING=$Channel" `
+        "-DPLAYGROUND_UPDATE_METADATA_URL:STRING=AUTO"
     if ($LASTEXITCODE -ne 0) { throw "CMake configure failed for version $Version." }
 }
 
@@ -47,7 +54,7 @@ function Invoke-Build {
 
 try {
     Write-Host "Building application-path probe as $baselineVersion..."
-    Invoke-Configure $baselineVersion $true
+    Invoke-Configure $baselineVersion $true "beta"
     Invoke-Build
     $probeRoot = Join-Path $buildRoot "installer-validation/app-probe-$baselineVersion"
     New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
@@ -97,6 +104,8 @@ try {
         Scenario = "ApplicationUpdate"
         ApplicationUnderTest = $applicationUnderTest
         CandidateRepository = $repository
+        CandidateDisplayVersion = $CandidateVersion
+        CandidateChannel = $candidateChannel
         ReleaseRepository = $ReleaseRepository
     }
     if ($CloseExistingSandbox) { $validationArgs.CloseExistingSandbox = $true }
@@ -107,7 +116,9 @@ finally {
     Write-Host "Restoring production updater build options..."
     & cmake -S $PlaygroundRoot -B $buildRoot `
         "-DPLAYGROUND_ENABLE_UPDATE_TEST_HOOKS:BOOL=OFF" `
-        "-DPLAYGROUND_VERSION_OVERRIDE:STRING="
+        "-DPLAYGROUND_VERSION_OVERRIDE:STRING=" `
+        "-DPLAYGROUND_UPDATE_CHANNEL:STRING=auto" `
+        "-DPLAYGROUND_UPDATE_METADATA_URL:STRING=AUTO"
     if ($LASTEXITCODE -ne 0) { throw "Failed to restore production CMake options." }
     Invoke-Build
 }

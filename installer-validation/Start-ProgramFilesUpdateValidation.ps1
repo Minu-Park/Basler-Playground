@@ -1,6 +1,6 @@
 param(
-    [string]$PlaygroundRoot = "C:\Users\minwoo\Documents\Playground-ifw-components",
-    [string]$MetadataUrl = "https://github.com/Minu-Park/Basler-Playground/releases/download/updater-validation-v0.1.3-20260624/latest.json",
+    [string]$PlaygroundRoot = "C:\Users\minwoo\Documents\Playground",
+    [string]$MetadataUrl = "https://github.com/Minu-Park/Basler-Playground/releases/download/beta-channel/latest-beta.json",
     [string]$InstallRoot = "C:\Program Files\Basler Playground Validation",
     [string]$ReleaseRepository = "Minu-Park/Basler-Playground",
     [switch]$Cleanup,
@@ -31,12 +31,12 @@ if ($Cleanup) {
 }
 
 $PlaygroundRoot = (Resolve-Path $PlaygroundRoot).Path
-$Probe = Join-Path $PlaygroundRoot "build/installer-validation/app-probe-0.1.2/Playground.exe"
-if (-not (Test-Path $Probe)) { throw "Application probe is missing. Run Invoke-ApplicationUpdateValidation.ps1 first." }
-if (Test-Path $InstallRoot) { throw "Validation install root already exists; inspect or clean it first: $InstallRoot" }
-
 $release = gh release view --repo $ReleaseRepository --json tagName,assets | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0) { throw "Failed to resolve the stable baseline release." }
+$baselineVersion = $release.tagName.TrimStart("v")
+$Probe = Join-Path $PlaygroundRoot "build/installer-validation/app-probe-$baselineVersion/Playground.exe"
+if (-not (Test-Path $Probe)) { throw "Application probe is missing. Run Invoke-ApplicationUpdateValidation.ps1 first." }
+if (Test-Path $InstallRoot) { throw "Validation install root already exists; inspect or clean it first: $InstallRoot" }
 $asset = @($release.assets | Where-Object { $_.name -match 'windows-x64\.exe$' -and $_.name -notmatch '\.sha256$' }) | Select-Object -First 1
 if (-not $asset) { throw "Stable release has no Windows x64 installer." }
 $cacheRoot = Join-Path (Split-Path $PSScriptRoot -Parent) "build/installer-validation/cache/$($release.tagName)"
@@ -65,5 +65,5 @@ finally {
 
 Write-Host "Playground opened from the isolated Program Files fixture."
 Write-Host "Choose Help > Check for Updates... > Install Update and approve the updater UAC prompt."
-Write-Host "After confirming version 0.1.3, clean up with:"
+Write-Host "After confirming the beta-channel version, clean up with:"
 Write-Host ".\installer-validation\Start-ProgramFilesUpdateValidation.ps1 -Cleanup"
