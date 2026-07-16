@@ -1,17 +1,9 @@
-# Local Windows release helper for basler-playground.
-# Requires: git, GitHub CLI (`gh auth login`), and access to the private Playground repository.
+# Local Windows installer-artifact builder for basler-playground.
+# Requires: git and access to the private Playground repository.
 
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$PlaygroundTag,
-
-    [string]$PlaygroundRepo = "git@github.com:minu-park/playground.git",
-
-    [string]$ReleaseRepository = "Minu-Park/Basler-Playground",
-
-    [int]$UpdateEpoch = 2,
-
-    [switch]$ForceFullInstaller
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [string[]]$CliArgs
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,6 +13,36 @@ function Require-Command($Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) {
         throw "Required command not found: $Name"
     }
+}
+
+function Read-InstallerArguments {
+    param([string[]]$Arguments)
+
+    $tag = $null
+    $migration = $false
+    for ($index = 0; $index -lt $Arguments.Count; $index++) {
+        switch ($Arguments[$index]) {
+            "--tag" {
+                if ($tag -or ++$index -ge $Arguments.Count -or $Arguments[$index].StartsWith("--")) {
+                    throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+                }
+                $tag = $Arguments[$index]
+            }
+            "--migration" {
+                if ($migration) {
+                    throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+                }
+                $migration = $true
+            }
+            default {
+                throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+            }
+        }
+    }
+    if (-not $tag) {
+        throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+    }
+    return [pscustomobject]@{ Tag = $tag; Migration = $migration }
 }
 
 function Invoke-NativeCommand {
@@ -62,6 +84,133 @@ function New-HardLinkedDirectory {
     }
 }
 
+function New-MigrationBootstrapper {
+    param(
+        [Parameter(Mandatory = $true)][string]$OfflineInstaller,
+        [Parameter(Mandatory = $true)][string]$RepositoryZip,
+        [Parameter(Mandatory = $true)][string]$OutputPath
+    )
+
+    $iexpress = Join-Path $env:WINDIR "System32\\iexpress.exe"
+    if (-not (Test-Path $iexpress)) {
+        throw "IExpress is required to build the self-contained Windows migration installer."
+    }
+    $work = Join-Path ([System.IO.Path]::GetTempPath()) ("basler-playground-migration-" + [guid]::NewGuid())
+    New-Item -ItemType Directory -Force -Path $work | Out-Null
+    try {
+        Copy-Item -LiteralPath $OfflineInstaller -Destination (Join-Path $work "offline-installer.exe") -Force
+        Copy-Item -LiteralPath $RepositoryZip -Destination (Join-Path $work "repository.zip") -Force
+        $migrationScript = @'
+$ErrorActionPreference = "Stop"
+
+function Find-InstalledMaintenanceTool {
+    $roots = [System.Collections.Generic.List[string]]::new()
+    $roots.Add((Join-Path $env:ProgramFiles "Basler Playground"))
+    foreach ($uninstallRoot in @(
+        "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
+        "HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*")) {
+        Get-ItemProperty $uninstallRoot -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -eq "Basler Playground" } |
+            ForEach-Object {
+                if ($_.InstallLocation) { $roots.Add([string]$_.InstallLocation) }
+            }
+    }
+    foreach ($root in $roots | Select-Object -Unique) {
+        $tool = Join-Path $root "MaintenanceTool.exe"
+        if (Test-Path -LiteralPath $tool) { return $tool }
+    }
+    return $null
+}
+
+$maintenanceTool = Find-InstalledMaintenanceTool
+if (-not $maintenanceTool) {
+    $process = Start-Process -FilePath (Join-Path $PSScriptRoot "offline-installer.exe") -Verb RunAs -Wait -PassThru
+    exit $process.ExitCode
+}
+
+$repositoryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("basler-playground-migration-repository-" + [guid]::NewGuid())
+try {
+    Expand-Archive -LiteralPath (Join-Path $PSScriptRoot "repository.zip") -DestinationPath $repositoryRoot -Force
+    if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot "Updates.xml"))) {
+        throw "The embedded update repository is invalid."
+    }
+    $repositoryUrl = ([uri]$repositoryRoot).AbsoluteUri
+    $updates = [xml](Get-Content -LiteralPath (Join-Path $repositoryRoot "Updates.xml") -Raw)
+    $pluginPackages = @($updates.Updates.PackageUpdate | Where-Object {
+        [string]$_.Name -match "Plugin$"
+    } | ForEach-Object { [string]$_.Name })
+    $commonArguments = @(
+        "--lang", "en", "--set-temp-repository", $repositoryUrl,
+        "--accept-licenses", "--default-answer", "--confirm-command")
+    if ($pluginPackages.Count -gt 0) {
+        $pluginInstall = Start-Process -FilePath $maintenanceTool -Verb RunAs -Wait -PassThru -ArgumentList (
+            $commonArguments + @("install") + $pluginPackages)
+        if ($pluginInstall.ExitCode -ne 0) { exit $pluginInstall.ExitCode }
+    }
+    $process = Start-Process -FilePath $maintenanceTool -Verb RunAs -Wait -PassThru -ArgumentList (
+        $commonArguments + @("update"))
+    exit $process.ExitCode
+}
+finally {
+    Remove-Item -LiteralPath $repositoryRoot -Recurse -Force -ErrorAction SilentlyContinue
+}
+'@
+        $migrationPath = Join-Path $work "Invoke-Migration.ps1"
+        [System.IO.File]::WriteAllText($migrationPath, $migrationScript, [System.Text.UTF8Encoding]::new($false))
+        $sed = @"
+[Version]
+Class=IEXPRESS
+SEDVersion=3
+[Options]
+PackagePurpose=InstallApp
+ShowInstallProgramWindow=0
+HideExtractAnimation=1
+UseLongFileName=1
+InsideCompressed=1
+CAB_FixedSize=0
+CAB_ResvCodeSigning=0
+RebootMode=N
+InstallPrompt=
+DisplayLicense=
+FinishMessage=
+TargetName=$OutputPath
+FriendlyName=Basler Playground Installer
+AppLaunched=powershell.exe -NoProfile -ExecutionPolicy Bypass -File Invoke-Migration.ps1
+PostInstallCmd=<None>
+AdminQuietInstCmd=
+UserQuietInstCmd=
+SourceFiles=SourceFiles
+[Strings]
+FILE0="offline-installer.exe"
+FILE1="repository.zip"
+FILE2="Invoke-Migration.ps1"
+[SourceFiles]
+SourceFiles0=$work
+[SourceFiles0]
+%FILE0%=
+%FILE1%=
+%FILE2%=
+"@
+        $sedPath = Join-Path $work "migration.sed"
+        # IExpress accepts legacy ANSI SED files; UTF-8 makes it silently
+        # discard the response file and return without producing TargetName.
+        [System.IO.File]::WriteAllText($sedPath, $sed, [System.Text.Encoding]::Default)
+        # IExpress spawns its package build asynchronously when invoked through
+        # the shell. Wait for that child process before checking TargetName.
+        $iexpressProcess = Start-Process -FilePath $iexpress -ArgumentList @("/N", $sedPath) `
+            -Wait -PassThru -WindowStyle Hidden
+        if ($iexpressProcess.ExitCode -ne 0) {
+            throw "IExpress migration bootstrapper creation failed (exit code $($iexpressProcess.ExitCode))."
+        }
+        if (-not (Test-Path $OutputPath)) {
+            throw "IExpress completed without creating the migration installer."
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Get-ReleaseNotesForTag {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -81,15 +230,15 @@ function Get-ReleaseNotesForTag {
 }
 
 Require-Command git
-Require-Command gh
 
-Invoke-NativeCommand gh @("auth", "status") "GitHub CLI authentication check failed" | Out-Null
+$arguments = Read-InstallerArguments $CliArgs
+$PlaygroundTag = $arguments.Tag
+$ForceFullInstaller = $arguments.Migration
+$PlaygroundRepo = "git@github.com:minu-park/playground.git"
+$UpdateEpoch = 4
 
 if ($PlaygroundTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.([1-9][0-9]*))?$') {
     throw "PlaygroundTag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N."
-}
-if ($UpdateEpoch -lt 1) {
-    throw "UpdateEpoch must be a positive integer."
 }
 $packageVersion = $Matches[1]
 $betaRevision = $Matches[2]
@@ -100,22 +249,6 @@ $displayVersion = $PlaygroundTag.Substring(1)
 $isPrerelease = [bool]$betaRevision
 $channel = if ($isPrerelease) { "beta" } else { "stable" }
 $ifwVersion = if ($isPrerelease) { "$packageVersion.$betaRevision" } else { "$packageVersion.999999" }
-
-$previousErrorActionPreference = $ErrorActionPreference
-try {
-    $ErrorActionPreference = "SilentlyContinue"
-    $releaseJson = gh release view $PlaygroundTag --repo $ReleaseRepository --json isDraft 2>$null
-    $releaseExists = $LASTEXITCODE -eq 0
-}
-finally {
-    $ErrorActionPreference = $previousErrorActionPreference
-}
-if ($releaseExists) {
-    $releaseState = $releaseJson | ConvertFrom-Json
-    if (-not $releaseState.isDraft) {
-        throw "Release $PlaygroundTag is already published. Published release assets are immutable; create a new version."
-    }
-}
 
 $root = $PSScriptRoot
 $checkout = Join-Path $root "playground"
@@ -132,6 +265,8 @@ if (Test-Path $checkout) {
 }
 
 Invoke-NativeCommand git @("-C", $checkout, "fetch", "--prune", "--tags", "origin") "Failed to fetch Playground tags from origin"
+Invoke-NativeCommand git @("-C", $checkout, "show-ref", "--tags", "--verify", "--quiet", "refs/tags/$PlaygroundTag") "Playground tag $PlaygroundTag was not found"
+$tagCommit = (Invoke-NativeCommand git @("-C", $checkout, "rev-parse", "refs/tags/$PlaygroundTag^{commit}") "Failed to resolve Playground tag $PlaygroundTag" | Select-Object -Last 1).Trim()
 Invoke-NativeCommand git @("-C", $checkout, "checkout", "--detach", $PlaygroundTag) "Failed to check out Playground tag $PlaygroundTag"
 # Initialize Playground's own private/internal submodules after the tag checkout.
 Invoke-NativeCommand git @("-C", $checkout, "submodule", "update", "--init", "--recursive") "Failed to initialize Playground submodules"
@@ -191,15 +326,7 @@ if ($applicationProductVersion -ne $displayVersion) {
 
 $installerName = "BaslerPlayground-$PlaygroundTag-windows-x64.exe"
 $installerOut = Join-Path $dist $installerName
-Copy-Item $installer.FullName $installerOut -Force
-
-$hash = Get-FileHash $installerOut -Algorithm SHA256
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-[System.IO.File]::WriteAllText(
-    "$installerOut.sha256",
-    "$($hash.Hash.ToLowerInvariant())  $installerName",
-    $utf8NoBom
-)
 
 $ifwPackageName = "Basler Playground-$displayVersion-win64-release"
 $ifwTempPath = Join-Path $checkout "build/bundle/_CPack_Packages/win64/IFW/$ifwPackageName"
@@ -296,7 +423,26 @@ if (-not (Test-Path $repositoryZipOut)) {
 }
 $repositoryZipHash = Get-FileHash $repositoryZipOut -Algorithm SHA256
 
+if (Test-Path $installerOut) {
+    Remove-Item -LiteralPath $installerOut -Force
+}
+if ($ForceFullInstaller) {
+    New-MigrationBootstrapper -OfflineInstaller $installer.FullName `
+        -RepositoryZip $repositoryZipOut -OutputPath $installerOut
+} else {
+    Copy-Item -LiteralPath $installer.FullName -Destination $installerOut -Force
+}
+$hash = Get-FileHash $installerOut -Algorithm SHA256
+[System.IO.File]::WriteAllText(
+    "$installerOut.sha256",
+    "$($hash.Hash.ToLowerInvariant())  $installerName",
+    $utf8NoBom
+)
+
 $commit = (Invoke-NativeCommand git @("-C", $checkout, "rev-parse", "HEAD") "Failed to resolve the Playground commit" | Select-Object -Last 1).Trim()
+if ($commit -ne $tagCommit) {
+    throw "Checked-out Playground commit does not match immutable tag $PlaygroundTag."
+}
 $releaseUrl = "https://github.com/minu-park/basler-playground/releases/tag/$PlaygroundTag"
 $installerUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$installerName"
 $repositoryZipUrl = "https://github.com/minu-park/basler-playground/releases/download/$PlaygroundTag/$repositoryZipName"
@@ -353,28 +499,30 @@ $releaseAssets = @(
 )
 $releaseNotesOut = Join-Path $dist "release-notes.md"
 [System.IO.File]::WriteAllText($releaseNotesOut, $releaseNotes, $utf8NoBom)
-$releaseTypeArguments = @()
-if ($isPrerelease) {
-    $releaseTypeArguments += "--prerelease"
+$artifactManifest = [ordered]@{
+    schemaVersion = 1
+    tag = $PlaygroundTag
+    playgroundCommit = $commit
+    expectedTagCommit = $tagCommit
+    title = "Basler Playground $PlaygroundTag"
+    channel = $channel
+    prerelease = $isPrerelease
+    outputDirectory = $dist
+    releaseNotesFile = (Split-Path $releaseNotesOut -Leaf)
+    assets = @($releaseAssets | ForEach-Object {
+        $file = Get-Item -LiteralPath $_
+        [ordered]@{
+            fileName = $file.Name
+            sha256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+        }
+    })
 }
+$artifactManifestOut = Join-Path $dist "release-artifacts.json"
+[System.IO.File]::WriteAllText(
+    $artifactManifestOut,
+    ($artifactManifest | ConvertTo-Json -Depth 6),
+    $utf8NoBom
+)
 
-if ($releaseExists) {
-    Invoke-NativeCommand gh (@(
-        "release", "upload", $PlaygroundTag,
-        "--repo", $ReleaseRepository
-    ) + $releaseAssets + @("--clobber")) "Failed to upload release assets for $PlaygroundTag"
-    Invoke-NativeCommand gh (@(
-        "release", "edit", $PlaygroundTag,
-        "--repo", $ReleaseRepository,
-        "--title", "Basler Playground $PlaygroundTag",
-        "--notes-file", $releaseNotesOut
-    ) + $releaseTypeArguments) "Failed to update release metadata for $PlaygroundTag"
-} else {
-    Invoke-NativeCommand gh (@(
-        "release", "create", $PlaygroundTag,
-        "--repo", $ReleaseRepository
-    ) + $releaseAssets + @(
-        "--title", "Basler Playground $PlaygroundTag",
-        "--notes-file", $releaseNotesOut
-    ) + $releaseTypeArguments + @("--draft")) "Failed to create draft release for $PlaygroundTag"
-}
+Write-Host "Installer artifacts created: $dist"
+Write-Host "Upload them with: .\\deployment.ps1"
