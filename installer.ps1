@@ -19,30 +19,23 @@ function Read-InstallerArguments {
     param([string[]]$Arguments)
 
     $tag = $null
-    $migration = $false
     for ($index = 0; $index -lt $Arguments.Count; $index++) {
         switch ($Arguments[$index]) {
             "--tag" {
                 if ($tag -or ++$index -ge $Arguments.Count -or $Arguments[$index].StartsWith("--")) {
-                    throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+                    throw "Usage: .\\installer.ps1 --tag vX.Y.Z"
                 }
                 $tag = $Arguments[$index]
             }
-            "--migration" {
-                if ($migration) {
-                    throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
-                }
-                $migration = $true
-            }
             default {
-                throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+                throw "Usage: .\\installer.ps1 --tag vX.Y.Z"
             }
         }
     }
     if (-not $tag) {
-        throw "Usage: .\\installer.ps1 --tag vX.Y.Z [--migration]"
+        throw "Usage: .\\installer.ps1 --tag vX.Y.Z"
     }
-    return [pscustomobject]@{ Tag = $tag; Migration = $migration }
+    return [pscustomobject]@{ Tag = $tag }
 }
 
 function Invoke-NativeCommand {
@@ -84,133 +77,6 @@ function New-HardLinkedDirectory {
     }
 }
 
-function New-MigrationBootstrapper {
-    param(
-        [Parameter(Mandatory = $true)][string]$OfflineInstaller,
-        [Parameter(Mandatory = $true)][string]$RepositoryZip,
-        [Parameter(Mandatory = $true)][string]$OutputPath
-    )
-
-    $iexpress = Join-Path $env:WINDIR "System32\\iexpress.exe"
-    if (-not (Test-Path $iexpress)) {
-        throw "IExpress is required to build the self-contained Windows migration installer."
-    }
-    $work = Join-Path ([System.IO.Path]::GetTempPath()) ("basler-playground-migration-" + [guid]::NewGuid())
-    New-Item -ItemType Directory -Force -Path $work | Out-Null
-    try {
-        Copy-Item -LiteralPath $OfflineInstaller -Destination (Join-Path $work "offline-installer.exe") -Force
-        Copy-Item -LiteralPath $RepositoryZip -Destination (Join-Path $work "repository.zip") -Force
-        $migrationScript = @'
-$ErrorActionPreference = "Stop"
-
-function Find-InstalledMaintenanceTool {
-    $roots = [System.Collections.Generic.List[string]]::new()
-    $roots.Add((Join-Path $env:ProgramFiles "Basler Playground"))
-    foreach ($uninstallRoot in @(
-        "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
-        "HKLM:\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*")) {
-        Get-ItemProperty $uninstallRoot -ErrorAction SilentlyContinue |
-            Where-Object { $_.DisplayName -eq "Basler Playground" } |
-            ForEach-Object {
-                if ($_.InstallLocation) { $roots.Add([string]$_.InstallLocation) }
-            }
-    }
-    foreach ($root in $roots | Select-Object -Unique) {
-        $tool = Join-Path $root "MaintenanceTool.exe"
-        if (Test-Path -LiteralPath $tool) { return $tool }
-    }
-    return $null
-}
-
-$maintenanceTool = Find-InstalledMaintenanceTool
-if (-not $maintenanceTool) {
-    $process = Start-Process -FilePath (Join-Path $PSScriptRoot "offline-installer.exe") -Verb RunAs -Wait -PassThru
-    exit $process.ExitCode
-}
-
-$repositoryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("basler-playground-migration-repository-" + [guid]::NewGuid())
-try {
-    Expand-Archive -LiteralPath (Join-Path $PSScriptRoot "repository.zip") -DestinationPath $repositoryRoot -Force
-    if (-not (Test-Path -LiteralPath (Join-Path $repositoryRoot "Updates.xml"))) {
-        throw "The embedded update repository is invalid."
-    }
-    $repositoryUrl = ([uri]$repositoryRoot).AbsoluteUri
-    $updates = [xml](Get-Content -LiteralPath (Join-Path $repositoryRoot "Updates.xml") -Raw)
-    $pluginPackages = @($updates.Updates.PackageUpdate | Where-Object {
-        [string]$_.Name -match "Plugin$"
-    } | ForEach-Object { [string]$_.Name })
-    $commonArguments = @(
-        "--lang", "en", "--set-temp-repository", $repositoryUrl,
-        "--accept-licenses", "--default-answer", "--confirm-command")
-    if ($pluginPackages.Count -gt 0) {
-        $pluginInstall = Start-Process -FilePath $maintenanceTool -Verb RunAs -Wait -PassThru -ArgumentList (
-            $commonArguments + @("install") + $pluginPackages)
-        if ($pluginInstall.ExitCode -ne 0) { exit $pluginInstall.ExitCode }
-    }
-    $process = Start-Process -FilePath $maintenanceTool -Verb RunAs -Wait -PassThru -ArgumentList (
-        $commonArguments + @("update"))
-    exit $process.ExitCode
-}
-finally {
-    Remove-Item -LiteralPath $repositoryRoot -Recurse -Force -ErrorAction SilentlyContinue
-}
-'@
-        $migrationPath = Join-Path $work "Invoke-Migration.ps1"
-        [System.IO.File]::WriteAllText($migrationPath, $migrationScript, [System.Text.UTF8Encoding]::new($false))
-        $sed = @"
-[Version]
-Class=IEXPRESS
-SEDVersion=3
-[Options]
-PackagePurpose=InstallApp
-ShowInstallProgramWindow=0
-HideExtractAnimation=1
-UseLongFileName=1
-InsideCompressed=1
-CAB_FixedSize=0
-CAB_ResvCodeSigning=0
-RebootMode=N
-InstallPrompt=
-DisplayLicense=
-FinishMessage=
-TargetName=$OutputPath
-FriendlyName=Basler Playground Installer
-AppLaunched=powershell.exe -NoProfile -ExecutionPolicy Bypass -File Invoke-Migration.ps1
-PostInstallCmd=<None>
-AdminQuietInstCmd=
-UserQuietInstCmd=
-SourceFiles=SourceFiles
-[Strings]
-FILE0="offline-installer.exe"
-FILE1="repository.zip"
-FILE2="Invoke-Migration.ps1"
-[SourceFiles]
-SourceFiles0=$work
-[SourceFiles0]
-%FILE0%=
-%FILE1%=
-%FILE2%=
-"@
-        $sedPath = Join-Path $work "migration.sed"
-        # IExpress accepts legacy ANSI SED files; UTF-8 makes it silently
-        # discard the response file and return without producing TargetName.
-        [System.IO.File]::WriteAllText($sedPath, $sed, [System.Text.Encoding]::Default)
-        # IExpress spawns its package build asynchronously when invoked through
-        # the shell. Wait for that child process before checking TargetName.
-        $iexpressProcess = Start-Process -FilePath $iexpress -ArgumentList @("/N", $sedPath) `
-            -Wait -PassThru -WindowStyle Hidden
-        if ($iexpressProcess.ExitCode -ne 0) {
-            throw "IExpress migration bootstrapper creation failed (exit code $($iexpressProcess.ExitCode))."
-        }
-        if (-not (Test-Path $OutputPath)) {
-            throw "IExpress completed without creating the migration installer."
-        }
-    }
-    finally {
-        Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
-    }
-}
-
 function Get-ReleaseNotesForTag {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -233,7 +99,6 @@ Require-Command git
 
 $arguments = Read-InstallerArguments $CliArgs
 $PlaygroundTag = $arguments.Tag
-$ForceFullInstaller = $arguments.Migration
 $PlaygroundRepo = "git@github.com:minu-park/playground.git"
 $UpdateEpoch = 4
 
@@ -426,12 +291,7 @@ $repositoryZipHash = Get-FileHash $repositoryZipOut -Algorithm SHA256
 if (Test-Path $installerOut) {
     Remove-Item -LiteralPath $installerOut -Force
 }
-if ($ForceFullInstaller) {
-    New-MigrationBootstrapper -OfflineInstaller $installer.FullName `
-        -RepositoryZip $repositoryZipOut -OutputPath $installerOut
-} else {
-    Copy-Item -LiteralPath $installer.FullName -Destination $installerOut -Force
-}
+Copy-Item -LiteralPath $installer.FullName -Destination $installerOut -Force
 $hash = Get-FileHash $installerOut -Algorithm SHA256
 [System.IO.File]::WriteAllText(
     "$installerOut.sha256",
@@ -471,16 +331,14 @@ $metadata = [ordered]@{
     update = [ordered]@{
         epoch = $UpdateEpoch
         ifwVersion = $ifwVersion
-        forceFullInstaller = [bool]$ForceFullInstaller
+        forceFullInstaller = $false
     }
     playgroundCommit = $commit
 }
-if (-not $ForceFullInstaller) {
-    $metadata.repositoryZip = [ordered]@{
-        fileName = $repositoryZipName
-        url = $repositoryZipUrl
-        sha256 = $repositoryZipHash.Hash.ToLowerInvariant()
-    }
+$metadata.repositoryZip = [ordered]@{
+    fileName = $repositoryZipName
+    url = $repositoryZipUrl
+    sha256 = $repositoryZipHash.Hash.ToLowerInvariant()
 }
 
 $metadataFileName = if ($isPrerelease) { "latest-beta.json" } else { "latest.json" }
