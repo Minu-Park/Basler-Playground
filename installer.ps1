@@ -84,7 +84,7 @@ if (Test-Path $checkout) {
     Invoke-NativeCommand git @("clone", "--filter=blob:none", $PlaygroundRepo, $checkout) "Failed to clone Playground"
 }
 
-Invoke-NativeCommand git @("-C", $checkout, "fetch", "--prune", "--tags", "origin") "Failed to fetch Playground tags from origin"
+Invoke-NativeCommand git @("-C", $checkout, "fetch", "--prune", "--tags", "--force", "origin") "Failed to fetch Playground tags from origin"
 Invoke-NativeCommand git @("-C", $checkout, "show-ref", "--tags", "--verify", "--quiet", "refs/tags/$PlaygroundTag") "Playground tag $PlaygroundTag was not found"
 $tagCommit = (Invoke-NativeCommand git @("-C", $checkout, "rev-parse", "refs/tags/$PlaygroundTag^{commit}") "Failed to resolve Playground tag $PlaygroundTag" | Select-Object -Last 1).Trim()
 Invoke-NativeCommand git @("-C", $checkout, "checkout", "--detach", $PlaygroundTag) "Failed to check out Playground tag $PlaygroundTag"
