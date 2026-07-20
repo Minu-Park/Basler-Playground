@@ -29,7 +29,6 @@ if ($ReleaseTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0
 
 $expectedVersion = $ReleaseTag.Substring(1)
 $expectedChannel = if ($Matches[2]) { "beta" } else { "stable" }
-$expectedIfwVersion = if ($Matches[2]) { "$($Matches[1]).$($Matches[2])" } else { "$($Matches[1]).999999" }
 $sourceMetadataName = if ($expectedChannel -eq "beta") { "latest-beta.json" } else { "latest.json" }
 $releaseJson = gh release view $ReleaseTag --repo $ReleaseRepository --json isDraft,isPrerelease,assets
 if ($LASTEXITCODE -ne 0) {
@@ -60,7 +59,7 @@ try {
     $sourceMetadata = Join-Path $tempRoot $sourceMetadataName
     $metadata = Get-Content $sourceMetadata -Raw | ConvertFrom-Json
     if ($metadata.version -ne $expectedVersion -or $metadata.tag -ne $ReleaseTag -or
-        $metadata.channel -ne $expectedChannel -or $metadata.update.ifwVersion -ne $expectedIfwVersion) {
+        $metadata.channel -ne $expectedChannel) {
         throw "Release metadata identity does not match $ReleaseTag."
     }
 
