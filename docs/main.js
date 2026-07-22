@@ -50,7 +50,7 @@ function initHeroViewportCanvas() {
   if (input) input.addEventListener('change', (e) => updateThreshold(e.target.value));
 
   function render() {
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     if (imageLoaded) {
