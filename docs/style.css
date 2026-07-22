@@ -291,10 +291,10 @@ body {
 /* Live Camera Viewport Canvas Overlay */
 .overlay-viewport-container {
   position: absolute;
-  left: 25.6906%;
-  top: 17.0343%;
-  width: 45.0276%;
-  height: 67.9%;
+  left: 25.6855%;
+  top: 17.0068%;
+  width: 45.0191%;
+  height: 70.2535%;
   background: #ffffff;
   overflow: hidden;
   display: flex;
