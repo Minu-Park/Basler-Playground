@@ -265,6 +265,10 @@ body {
   margin-bottom: 84px; /* Generous 84px distance between CTA button & screenshot window */
 }
 
+.hero-mobile-only {
+  display: none;
+}
+
 /* Pure Transparent Screenshot Container */
 .screenshot-showcase-window {
   position: relative;
@@ -909,7 +913,11 @@ canvas.demo-canvas {
   font-size: 0.825rem;
 }
 
-/* Responsive Layout */
+/* ==========================================================================
+   Responsive Layout
+   ========================================================================== */
+
+/* --- Tablet (max-width: 1024px) --- */
 @media (max-width: 1024px) {
   .hero-title { font-size: 2.5rem; }
   .interactive-demo-container { grid-template-columns: 1fr; }
@@ -918,4 +926,73 @@ canvas.demo-canvas {
   .overlay-params-container { font-size: 0.65rem; padding: 0 4px; }
   .nav-links { display: none; }
   .repo-cards-grid { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+}
+
+/* --- Mobile (max-width: 768px) --- */
+@media (max-width: 768px) {
+  .container { padding: 0 16px; }
+
+  /* Header */
+  .site-header { height: 56px; }
+  .brand-logo-img { height: 22px; }
+  .brand-text { font-size: 1rem; }
+  .header-cta .btn-primary { display: none; }
+  .header-cta .btn-secondary { padding: 6px 14px; font-size: 0.8rem; }
+
+  /* Hero */
+  .hero-section { padding-top: 100px; padding-bottom: 48px; }
+  .hero-title { font-size: 1.75rem; line-height: 1.25; margin-bottom: 14px; }
+  .hero-provided-by { margin-bottom: 24px; }
+  .provided-by-badge { font-size: 0.725rem; padding: 4px 14px; }
+  .hero-subtitle { font-size: 0.95rem; margin: 0 auto 32px auto; line-height: 1.55; }
+  .hero-actions { margin-bottom: 48px; }
+  .hero-actions .btn-lg { padding: 10px 20px; font-size: 0.875rem; }
+  .hero-desktop-only { display: none; }
+  .hero-mobile-only { display: inline-flex; }
+
+  /* Screenshot overlay — hide interactive param overlay on mobile */
+  .overlay-params-container { display: none; }
+
+  /* Sections */
+  .section { padding: 56px 0; }
+  .section-highlight { padding: 56px 0; }
+  .section-title-wrapper { margin-bottom: 32px; }
+  .section-title { font-size: 1.5rem; }
+  .section-desc { font-size: 0.9rem; }
+
+  /* Features */
+  .features-grid { grid-template-columns: 1fr; gap: 16px; }
+  .feature-card { padding: 20px; }
+  .feature-card h3 { font-size: 1.05rem; }
+  .feature-card p { font-size: 0.85rem; }
+
+  /* Interactive Demo — HIDE entire live demo on mobile, show description only */
+  .interactive-demo-container { padding: 20px; gap: 0; }
+  .interactive-demo-preview { display: none; }
+  .interactive-demo-sidebar { max-width: 100%; }
+  .interactive-demo-sidebar h3 { font-size: 1.1rem; margin-bottom: 16px; }
+  .steps-list { gap: 16px; }
+
+  /* Repo cards */
+  .repo-cards-grid { grid-template-columns: 1fr; gap: 14px; }
+  .repo-card { padding: 18px; }
+  .repo-card-title { font-size: 0.9rem; }
+  .repo-card-desc { font-size: 0.825rem; margin-bottom: 14px; }
+
+  /* Footer */
+  .site-footer { padding: 28px 0; }
+  .footer-content { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .footer-links { flex-wrap: wrap; gap: 14px; }
+  .footer-copyright { font-size: 0.75rem; }
+}
+
+/* --- Small Mobile (max-width: 480px) --- */
+@media (max-width: 480px) {
+  .hero-title { font-size: 1.45rem; }
+  .hero-subtitle { font-size: 0.875rem; }
+  .section-title { font-size: 1.3rem; }
+  .section-tag-badge { font-size: 0.675rem; }
+  .steps-list p { font-size: 0.8rem; }
+  .step-num { width: 26px; height: 26px; font-size: 0.75rem; }
 }
