@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basler Playground | Unified Basler Vision Ecosystem Workspace</title>
+  <meta name="description" content="Basler Playground is the unified workspace for the entire Basler vision ecosystem. Control all Basler 2D cameras, 3D sensors, and CoaXPress framegrabbers in one suite with live Interactive Parameters.">
+  
+  <!-- Open Graph / Social Media Meta Tags -->
+  <meta property="og:title" content="Basler Playground | Unified Basler Vision Ecosystem Workspace">
+  <meta property="og:description" content="Unified workspace for the entire Basler vision portfolio featuring live JIT Interactive Parameters, multi-device 2D/3D vision, and framegrabbers.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header / Navigation -->
+  <header class="site-header">
+    <div class="container">
+      <div class="nav-wrapper">
+        <a href="#" class="brand-logo">
+          <img src="assets/app_icon.png" alt="Playground Icon" class="brand-logo-img">
+          <span class="brand-text">Playground</span>
+        </a>
+
+        <ul class="nav-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#interactive-highlight">Interactive Parameters</a></li>
+        </ul>
+
+        <div class="header-cta">
+          <a href="https://github.com/Minu-Park/Basler-Playground" target="_blank" rel="noopener" class="btn btn-secondary">
+            <svg class="btn-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+          </a>
+          <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Latest
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="container">
+
+        <h1 class="hero-title">
+          Unified Workspace for the Entire<br>
+          Basler Vision Ecosystem
+        </h1>
+
+        <!-- Restored Bubble Pill Badge directly tied to title -->
+        <div class="hero-provided-by">
+          <span class="provided-by-badge">Provided by Basler Korea</span>
+        </div>
+
+        <p class="hero-subtitle">
+          Control every Basler 2D camera, 3D sensor, and CoaXPress framegrabber in a single unified suite. Featuring <b>Interactive Parameters</b> for live JIT algorithm hot-swapping without stopping your acquisition pipeline.
+        </p>
+
+        <div class="hero-actions">
+          <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" target="_blank" rel="noopener" class="btn btn-primary btn-lg">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Latest Release
+          </a>
+        </div>
+
+        <!-- Real Screenshot Showcase Window -->
+        <div class="screenshot-showcase-window">
+          <img src="assets/app_screenshot.png" alt="Basler Playground Application UI" class="app-screenshot-bg">
+          
+          <!-- Live Binarized Camera Frame Overlay -->
+          <div class="overlay-viewport-container">
+            <canvas id="heroCanvas" class="overlay-live-canvas"></canvas>
+          </div>
+
+          <!-- Interactive Parameter Controls Overlay with Animated Pulse Highlight Badge -->
+          <div class="overlay-params-container pulse-highlight-box">
+            <div class="overlay-param-tooltip">⚡ Drag Interactive Parameter</div>
+            <div class="overlay-param-box">
+              <span class="param-name">range</span>
+              <input type="number" id="heroParamInput" value="127" min="1" max="255" class="overlay-num-input">
+              <input type="range" id="heroParamSlider" value="127" min="1" max="255" class="overlay-slider pulsing-slider">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 1: Features Section -->
+    <section id="features" class="section">
+      <div class="container">
+        <div class="section-title-wrapper">
+          <div class="section-tag">Core Capabilities</div>
+          <h2 class="section-title">Built for High-Speed Vision & Industrial Automation</h2>
+          <p class="section-desc">Modular architecture ensuring strict boundary isolation, zero-copy buffer handoffs, and instant JIT parameter hot-swapping.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Card 1 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            </div>
+            <h3>Session Workspace Architecture</h3>
+            <p>Unified multi-device authority and multi-window workspace for managing active camera streams, parameters, and live inspection pipelines.</p>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
+            <h3>High-Performance 2D & 3D Engine</h3>
+            <p>High-speed visualization engine for 2D image pan/zoom, 3D point cloud surfaces, profile measurements, and ROI tools.</p>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="feature-card highlight-card">
+            <div class="feature-icon-wrapper highlight">
+              ⚡
+            </div>
+            <h3>Interactive Parameters & JIT Hot-Swapping</h3>
+            <p>Write processing scripts directly in Script Editor. Simple <code>// @interactive</code> annotations automatically construct live GUI sliders instantly.</p>
+          </div>
+
+          <!-- Card 4 (Basler Camera) -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <img src="assets/basler.png" alt="Basler Camera Icon" style="width: 28px; height: 28px;">
+            </div>
+            <h3>Basler 2D & 3D Cameras</h3>
+            <p>Complete acquisition for Basler GigE, USB3, and 3D vision cameras with status contracts: <i>Idle</i>, <i>Disconnected</i>, <i>Connected</i>, and <i>Live Grabbing</i>.</p>
+          </div>
+
+          <!-- Card 5 (Basler Framegrabber) -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <img src="assets/basler.png" alt="Basler Framegrabber Icon" style="width: 28px; height: 28px;">
+            </div>
+            <h3>Basler Framegrabber (CoaXPress)</h3>
+            <p>Hardware abstraction for Basler CoaXPress framegrabbers supporting multi-stream DMA ring buffers and microsecond timestamping.</p>
+          </div>
+
+          <!-- Card 6 (LMI GoPxL 3D - End of List) -->
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <img src="assets/lmi.png" alt="LMI Gocator Icon" style="width: 28px; height: 28px;">
+            </div>
+            <h3>LMI 3D Sensors (GoPxL SDK)</h3>
+            <p>Full support for all LMI Gocator 3D sensors and profilers powered by GoPxL SDK for dynamic 3D profile parameter edits and surface point cloud extraction.</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: HIGHLIGHTED FEATURE SECTION - INTERACTIVE PARAMETERS DEMO -->
+    <section id="interactive-highlight" class="section section-highlight">
+      <div class="container">
+        <div class="section-title-wrapper">
+          <div class="section-tag-badge">CORE FEATURE SHOWCASE</div>
+          <h2 class="section-title">Auto-Generated JIT Interactive Parameters</h2>
+          <p class="section-desc">Add simple <code>// @interactive</code> annotations in code to construct live GUI parameter controls instantly without restarting image acquisition.</p>
+        </div>
+
+        <div class="interactive-demo-container">
+          <div class="interactive-demo-sidebar">
+            <h3>How It Works</h3>
+            <ol class="steps-list">
+              <li class="active">
+                <span class="step-num">1</span>
+                <div>
+                  <strong>Annotate Script Code</strong>
+                  <p>Add <code>// @interactive-range(min, max)</code> next to any variable in Script Editor.</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <div>
+                  <strong>Auto-Generated GUI Controls</strong>
+                  <p>Basler Playground parses annotations and constructs real-time parameter sliders.</p>
+                </div>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <div>
+                  <strong>Zero-Latency Pipeline Update</strong>
+                  <p>Drag sliders to tune thresholding, edges, or gain dynamically without dropping frames.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="interactive-demo-preview">
+            <div class="demo-toolbar">
+              <span>Live Interactive Parameter Hot-Swapping</span>
+              <span class="latency-badge">Latency: 0.2ms</span>
+            </div>
+            <div class="demo-split-view">
+              <div class="demo-code-pane">
+                <pre><code><span class="cmt">// Dynamic algorithm script</span>
+<span class="kwd">auto</span> <span class="var">input</span> = <span class="fn">get</span>().<span class="fn">toMatGray</span>();
+<span class="kwd">auto</span> <span class="var">output</span> = <span class="type">cv</span>::<span class="type">Mat</span>();
+
+<div class="code-interactive-highlight"><span class="kwd">int</span> <span class="var">range</span> = <span class="num" id="demoParamValText">127</span>; <span class="cmt">// @interactive-range(1, 255)</span></div>
+<span class="type">cv</span>::<span class="fn">threshold</span>(<span class="var">input</span>, <span class="var">output</span>, <span class="var">range</span>, <span class="num">255</span>,
+              <span class="type">cv</span>::<span class="const">THRESH_BINARY</span>);
+
+<span class="fn-pink">show</span>(<span class="var">output</span>);</code></pre>
+                
+                <div class="demo-slider-box">
+                  <div class="demo-slider-label">
+                    <span>Interactive Parameter: <code>range</code></span>
+                    <span class="val-pill" id="demoSliderBadge">Value: 127</span>
+                  </div>
+                  <input type="range" id="demoInteractiveSlider" value="127" min="1" max="255" class="param-slider demo-slider">
+                  <div class="slider-presets">
+                    <button class="preset-btn" data-val="1">Low (range = 1)</button>
+                    <button class="preset-btn active" data-val="127">Default (range = 127)</button>
+                    <button class="preset-btn" data-val="200">High (range = 200)</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="demo-canvas-pane">
+                <canvas id="demoCanvas" class="demo-canvas"></canvas>
+                <div class="canvas-caption">Real-Time Parameter Hot-Swap Output Stream</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: Submodule Ecosystem (Clean 3-Card Grid) -->
+    <section class="section section-alt">
+      <div class="container">
+        <div class="section-title-wrapper">
+          <div class="section-tag">OPEN SOURCE REPOSITORIES</div>
+          <h2 class="section-title">Basler Korea Ecosystem</h2>
+          <p class="section-desc">Modular open-source hardware repositories maintained by Basler Korea Inc. (BaslerKR) on GitHub.</p>
+        </div>
+
+        <div class="repo-cards-grid">
+          <!-- Card 1 -->
+          <a href="https://github.com/BaslerKR/Camera" target="_blank" rel="noopener" class="repo-card">
+            <div class="repo-card-header">
+              <svg class="github-card-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              <span class="repo-card-title">BaslerKR / Camera</span>
+            </div>
+            <p class="repo-card-desc">Hardware driver & acquisition interface for Basler 2D and 3D vision cameras.</p>
+            <span class="repo-card-link">github.com/BaslerKR/Camera ↗</span>
+          </a>
+
+          <!-- Card 2 -->
+          <a href="https://github.com/BaslerKR/Framegrabber" target="_blank" rel="noopener" class="repo-card">
+            <div class="repo-card-header">
+              <svg class="github-card-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              <span class="repo-card-title">BaslerKR / Framegrabber</span>
+            </div>
+            <p class="repo-card-desc">High-throughput hardware interface for Basler CoaXPress framegrabbers.</p>
+            <span class="repo-card-link">github.com/BaslerKR/Framegrabber ↗</span>
+          </a>
+
+          <!-- Card 3 -->
+          <a href="https://github.com/BaslerKR/Gocator" target="_blank" rel="noopener" class="repo-card">
+            <div class="repo-card-header">
+              <svg class="github-card-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              <span class="repo-card-title">BaslerKR / Gocator</span>
+            </div>
+            <p class="repo-card-desc">3D sensor integration module for LMI Gocator devices running on GoPxL SDK.</p>
+            <span class="repo-card-link">github.com/BaslerKR/Gocator ↗</span>
+          </a>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-content">
+        <a href="#" class="brand-logo">
+          <img src="assets/app_icon.png" alt="Playground Logo" class="brand-logo-img">
+          <span class="brand-text">Playground</span>
+        </a>
+        <div class="footer-links">
+          <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" target="_blank" rel="noopener">Latest Release</a>
+          <a href="https://github.com/Minu-Park/Basler-Playground" target="_blank" rel="noopener">GitHub Repository</a>
+        </div>
+        <div class="footer-copyright">
+          © 2026 Basler AG. Multi-Device Vision & Imaging Workspace.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Main JavaScript -->
+  <script src="main.js"></script>
+</body>
+</html>
