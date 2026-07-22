@@ -63,12 +63,10 @@ Download the latest installer from the [**Releases**](https://github.com/Minu-Pa
 ### System Requirements
 
 - **OS**: Windows 10 / 11 (x64)
-- **Runtime**: Basler pylon SDK (for camera support)
-- **Optional**: Basler Framegrabber SDK (for CXP support), GoPxL SDK (for LMI Gocator support)
 
 ## Ecosystem
 
-Basler Playground integrates with the following open-source hardware driver repositories maintained by [**Basler Korea Inc.**](https://github.com/BaslerKR):
+Basler Playground integrates with the following open-source hardware driver repositories maintained by [**Basler Korea**](https://github.com/BaslerKR):
 
 | Repository | Description |
 |------------|-------------|
