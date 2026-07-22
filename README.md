@@ -12,7 +12,7 @@
 <p align="center">
   <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest"><img src="https://img.shields.io/github/v/release/Minu-Park/Basler-Playground?style=flat-square&color=00457C&label=Latest%20Release" alt="Latest Release"></a>
   <a href="https://playground.minu.kr"><img src="https://img.shields.io/badge/Homepage-playground.minu.kr-f58220?style=flat-square" alt="Homepage"></a>
-  <img src="https://img.shields.io/badge/Platform-Windows-blue?style=flat-square" alt="Platform">
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS-blue?style=flat-square" alt="Platform">
   <img src="https://img.shields.io/badge/License-Proprietary-lightgrey?style=flat-square" alt="License">
 </p>
 
@@ -62,7 +62,7 @@ Download the latest installer from the [**Releases**](https://github.com/Minu-Pa
 
 ### System Requirements
 
-- **OS**: Windows 10 / 11 (x64)
+- **OS**: Windows 10 / 11 (x64), macOS (Apple silicon)
 
 ## Ecosystem
 
