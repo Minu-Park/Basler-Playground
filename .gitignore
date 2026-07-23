@@ -6,10 +6,12 @@ obj/
 pylon/
 playground/
 
-# Local OS files
+# Local OS & Root Scratch files
 .DS_Store
 Thumbs.db
 desktop.ini
+/*.png
+/*.webp
 
 # IDE config files
 .vscode/
