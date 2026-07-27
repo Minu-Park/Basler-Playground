@@ -31,7 +31,7 @@ $artifactDirectory = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "dist")
 $manifest = Get-Content -LiteralPath (Get-RequiredFile (Join-Path $artifactDirectory "release-artifacts.json")).FullName -Raw | ConvertFrom-Json
 $PlaygroundTag = [string]$manifest.tag
 if ($PlaygroundTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.([1-9][0-9]*))?$') { throw "Artifact manifest has an invalid release tag." }
-$displayVersion = $Matches[1]
+$displayVersion = $PlaygroundTag.Substring(1)
 $isPrerelease = [bool]$Matches[2]
 $channel = if ($isPrerelease) { "beta" } else { "stable" }
 if ($manifest.schemaVersion -ne 2 -or $manifest.channel -ne $channel -or [bool]$manifest.prerelease -ne $isPrerelease) { throw "Artifact manifest identity does not match $PlaygroundTag." }
