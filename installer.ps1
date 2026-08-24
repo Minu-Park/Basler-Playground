@@ -19,19 +19,21 @@ function Read-InstallerArguments {
     param([string[]]$Arguments)
 
     $tag = $null
+    $coreOnly = $false
     for ($index = 0; $index -lt $Arguments.Count; $index++) {
         switch ($Arguments[$index]) {
             "--tag" {
                 if ($tag -or ++$index -ge $Arguments.Count -or $Arguments[$index].StartsWith("--")) {
-                    throw "Usage: .\installer.ps1 --tag vX.Y.Z"
+                    throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only]"
                 }
                 $tag = $Arguments[$index]
             }
-            default { throw "Usage: .\installer.ps1 --tag vX.Y.Z" }
+            "--core-only" { $coreOnly = $true }
+            default { throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only]" }
         }
     }
-    if (-not $tag) { throw "Usage: .\installer.ps1 --tag vX.Y.Z" }
-    return [pscustomobject]@{ Tag = $tag }
+    if (-not $tag) { throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only]" }
+    return [pscustomobject]@{ Tag = $tag; CoreOnly = $coreOnly }
 }
 
 function Invoke-NativeCommand {
@@ -63,6 +65,7 @@ Require-Command git
 
 $arguments = Read-InstallerArguments $CliArgs
 $PlaygroundTag = $arguments.Tag
+$coreOnly = [bool]$arguments.CoreOnly
 $PlaygroundRepo = "git@github.com:minu-park/playground.git"
 if ($PlaygroundTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.([1-9][0-9]*))?$') {
     throw "PlaygroundTag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N."
@@ -108,7 +111,9 @@ if (Test-Path $pylonPath) {
 
 Push-Location $checkout
 try {
-    Invoke-NativeCommand ".\package_bundle.bat" @("Release") "Playground Inno Setup packaging failed"
+    $packageArguments = @("Release")
+    if ($coreOnly) { $packageArguments += "CoreOnly" }
+    Invoke-NativeCommand ".\package_bundle.bat" $packageArguments "Playground Inno Setup packaging failed"
 } finally {
     Pop-Location
 }
@@ -123,6 +128,9 @@ if (-not (Test-Path $builtInstaller)) {
 $packagedApplicationPath = Join-Path $checkout "build\bundle\Release\Playground.exe"
 if (-not (Test-Path $packagedApplicationPath)) {
     throw "Packaged application executable not found: $packagedApplicationPath"
+}
+if ($coreOnly -and (Test-Path (Join-Path $checkout "build\bundle\Release\plugins"))) {
+    throw "Core-only package unexpectedly contains device plugin payloads."
 }
 $applicationProductVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($packagedApplicationPath).ProductVersion
 if ($applicationProductVersion -ne $displayVersion) {
@@ -151,6 +159,7 @@ $metadata = [ordered]@{
     publishedAt = (Get-Date).ToUniversalTime().ToString("o")
     notesUrl = $releaseUrl
     releaseNotes = $releaseNotes
+    packageProfile = if ($coreOnly) { "core-only" } else { "full" }
     platforms = @([ordered]@{
         os = "windows"
         arch = "x64"
@@ -176,6 +185,7 @@ $artifactManifest = [ordered]@{
     title = "Basler Playground $PlaygroundTag"
     channel = $channel
     prerelease = $isPrerelease
+    packageProfile = if ($coreOnly) { "core-only" } else { "full" }
     outputDirectory = $dist
     releaseNotesFile = (Split-Path $releaseNotesOut -Leaf)
     assets = @($releaseAssets | ForEach-Object {

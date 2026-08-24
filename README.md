@@ -58,6 +58,8 @@ Drag the auto-generated slider to adjust `range` live — the processing pipelin
 
 Download the latest installer from the [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest) page.
 
+Core and device integrations are released independently. The Core installer may be Core-only; use Playground's **Help > Plugins** package manager to download Camera, Frame Grabber, Gocator, or Heliotis C4 packages from the signed catalog. Plugin packages are activated after restarting Playground, so a device-only update does not require a Core reinstall.
+
 > **Note**: This repository hosts the release page and installer distribution only. Source code is not included.
 
 ### System Requirements
@@ -79,6 +81,15 @@ Basler Playground integrates with the following open-source hardware driver repo
 - 🌐 **Homepage**: [playground.minu.kr](https://playground.minu.kr)
 - 📦 **Latest Release**: [Download](https://github.com/Minu-Park/Basler-Playground/releases/latest)
 - 🐛 **Issues**: [Report a Bug](https://github.com/Minu-Park/Basler-Playground/issues)
+
+## Release tools
+
+- `installer.ps1 --tag <core-tag> --core-only` builds the lightweight Core installer.
+- `plugin-package.ps1 --core-tag <core-tag> --source-ref <immutable-parent-ref> --plugin <id> --version <plugin-version>` builds one device-plugin ZIP.
+- `plugin-deployment.ps1 -ArtifactDirectory <directory>` uploads one plugin draft release.
+- `plugin-catalog.ps1 -CoreTag <core-tag>` and `plugin-catalog-deployment.ps1 -CatalogPath <path>` publish the mutable plugin catalog asset.
+
+`--source-ref` is separate from the compatible Core tag so a parent commit containing only one device submodule update can produce a plugin release without rebuilding or replacing Core.
 
 ---
 
