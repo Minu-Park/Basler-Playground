@@ -85,8 +85,6 @@ if ($releaseExists) {
 } else {
     Invoke-NativeCommand gh (@("release", "create", $expectedReleaseTag, "--repo", $repository) + $assetPaths + @("--title", "Basler Playground $pluginId plugin $pluginVersion", "--notes-file", $notesFile.FullName) + $releaseTypeArguments + @("--draft")) "Failed to create plugin draft release"
 }
-Set-ReleaseNotLatest $repository $expectedReleaseTag
-
 $uploaded = (Invoke-NativeCommand gh @("release", "view", $expectedReleaseTag, "--repo", $repository, "--json", "isDraft,assets") "Failed to verify plugin release assets" | ConvertFrom-Json)
 if (-not $uploaded.isDraft) { throw "Plugin release was unexpectedly published during deployment." }
 foreach ($entry in @(@{ Name = $packageName; Hash = $packageHash }, @{ Name = "$packageName.sha256"; Hash = (Get-FileHash -LiteralPath $checksumFile.FullName -Algorithm SHA256).Hash.ToLowerInvariant() })) {
