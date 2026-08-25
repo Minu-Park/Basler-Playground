@@ -1,11 +1,16 @@
-# Upload and verify one device-plugin package as a GitHub draft release.
+# Legacy escape hatch for the pre-integrated plugin-release layout.
 
 param(
-    [Parameter(Mandatory = $true)][string]$ArtifactDirectory
+    [Parameter(Mandatory = $true)][string]$ArtifactDirectory,
+    [switch]$AllowLegacyPluginRelease
 )
 
 $ErrorActionPreference = "Stop"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+if (-not $AllowLegacyPluginRelease) {
+    throw "Standalone plugin releases are disabled. Build the package and assemble it with assemble-release.ps1. Pass -AllowLegacyPluginRelease only to inspect or repair a historical plugin release."
+}
 
 function Require-Command($Name) {
     if (-not (Get-Command $Name -ErrorAction SilentlyContinue)) { throw "Required command not found: $Name" }

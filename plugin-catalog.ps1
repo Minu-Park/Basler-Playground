@@ -3,7 +3,8 @@
 param(
     [Parameter(Mandatory = $true)][string]$CoreTag,
     [string]$ArtifactRoot = "",
-    [string]$OutputPath = ""
+    [string]$OutputPath = "",
+    [string]$ReleaseTag = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -13,6 +14,10 @@ if ($CoreTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]
     throw "CoreTag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N."
 }
 $coreVersion = $CoreTag.Substring(1) -replace '-beta\.[0-9]+$', ''
+$catalogReleaseTag = if ($ReleaseTag) { $ReleaseTag } else { $CoreTag }
+if ($catalogReleaseTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.[1-9][0-9]*)?$') {
+    throw "ReleaseTag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N."
+}
 $root = if ($ArtifactRoot) { (Resolve-Path -LiteralPath $ArtifactRoot -ErrorAction Stop).Path } else { (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "dist") -ErrorAction Stop).Path }
 $output = if ($OutputPath) { $OutputPath } else { Join-Path $root "plugins-index.json" }
 $expectedPluginIds = @("camera", "framegrabber", "gocator", "heliotis-c4")
@@ -38,11 +43,11 @@ foreach ($artifactFile in $artifactFiles) {
         description = [string]$artifact.description
         version = [string]$artifact.pluginVersion
         minimumCoreVersion = $coreVersion
-        releaseTag = [string]$artifact.releaseTag
+        releaseTag = $catalogReleaseTag
         platforms = [ordered]@{
             "windows-x64" = [ordered]@{
                 fileName = [string]$artifact.packageName
-                url = [string]$artifact.packageUrl
+                url = "https://github.com/Minu-Park/Basler-Playground/releases/download/$catalogReleaseTag/$($artifact.packageName)"
                 sha256 = [string]$artifact.packageSha256
             }
         }

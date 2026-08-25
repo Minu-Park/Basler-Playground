@@ -20,20 +20,27 @@ function Read-InstallerArguments {
 
     $tag = $null
     $coreOnly = $false
+    $outputDirectory = $null
     for ($index = 0; $index -lt $Arguments.Count; $index++) {
         switch ($Arguments[$index]) {
             "--tag" {
                 if ($tag -or ++$index -ge $Arguments.Count -or $Arguments[$index].StartsWith("--")) {
-                    throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only]"
+                    throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only] [--output-directory <directory>]"
                 }
                 $tag = $Arguments[$index]
             }
             "--core-only" { $coreOnly = $true }
-            default { throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only]" }
+            "--output-directory" {
+                if ($outputDirectory -or ++$index -ge $Arguments.Count -or $Arguments[$index].StartsWith("--")) {
+                    throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only] [--output-directory <directory>]"
+                }
+                $outputDirectory = $Arguments[$index]
+            }
+            default { throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only] [--output-directory <directory>]" }
         }
     }
-    if (-not $tag) { throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only]" }
-    return [pscustomobject]@{ Tag = $tag; CoreOnly = $coreOnly }
+    if (-not $tag) { throw "Usage: .\installer.ps1 --tag vX.Y.Z [--core-only] [--output-directory <directory>]" }
+    return [pscustomobject]@{ Tag = $tag; CoreOnly = $coreOnly; OutputDirectory = $outputDirectory }
 }
 
 function Invoke-NativeCommand {
@@ -117,12 +124,26 @@ try {
     Pop-Location
 }
 
-$dist = Join-Path $root "dist"
+$dist = if ($arguments.OutputDirectory) {
+    $requestedOutputDirectory = if ([System.IO.Path]::IsPathRooted($arguments.OutputDirectory)) {
+        [System.IO.Path]::GetFullPath($arguments.OutputDirectory)
+    } else {
+        [System.IO.Path]::GetFullPath((Join-Path $root $arguments.OutputDirectory))
+    }
+    New-Item -ItemType Directory -Force -Path $requestedOutputDirectory | Out-Null
+    $requestedOutputDirectory
+} else {
+    Join-Path $root "dist"
+}
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
-$installerName = "BaslerPlayground-$PlaygroundTag-windows-x64.exe"
-$builtInstaller = Join-Path $checkout "build\bundle\$installerName"
-if (-not (Test-Path $builtInstaller)) {
-    throw "Expected Inno Setup installer not found: $builtInstaller"
+$installerName = if ($coreOnly) {
+    "BaslerPlayground-$PlaygroundTag-windows-x64.exe"
+} else {
+    "BaslerPlayground-$PlaygroundTag-full-windows-x64.exe"
+}
+$sourceInstaller = Join-Path $checkout "build\bundle\BaslerPlayground-$PlaygroundTag-windows-x64.exe"
+if (-not (Test-Path $sourceInstaller)) {
+    throw "Expected Inno Setup installer not found: $sourceInstaller"
 }
 $packagedApplicationPath = Join-Path $checkout "build\bundle\Release\Playground.exe"
 if (-not (Test-Path $packagedApplicationPath)) {
@@ -137,7 +158,7 @@ if ($applicationProductVersion -ne $displayVersion) {
 }
 
 $installerOut = Join-Path $dist $installerName
-Copy-Item -LiteralPath $builtInstaller -Destination $installerOut -Force
+Copy-Item -LiteralPath $sourceInstaller -Destination $installerOut -Force
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 $hash = Get-FileHash $installerOut -Algorithm SHA256
 [System.IO.File]::WriteAllText("$installerOut.sha256", "$($hash.Hash.ToLowerInvariant())  $installerName", $utf8NoBom)

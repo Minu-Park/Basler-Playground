@@ -1,5 +1,4 @@
-# Build one device-plugin ZIP from an immutable Playground source tag.
-# The Core installer and each device plugin intentionally have separate release assets.
+# Build one device-plugin ZIP from an immutable Playground source tag for a combined Core release.
 
 param([Parameter(ValueFromRemainingArguments = $true)][string[]]$CliArgs)
 
@@ -176,7 +175,7 @@ try {
     $notes = "Basler Playground $pluginId plugin $pluginVersion, built from source $sourceRef ($sourceCommit) for Core $coreTag ($tagCommit)."
     [System.IO.File]::WriteAllText((Join-Path $dist "release-notes.md"), $notes, $utf8NoBom)
     Write-Host "Plugin artifacts created: $dist"
-    Write-Host "Upload them with: .\plugin-deployment.ps1 -ArtifactDirectory $dist"
+    Write-Host "Add this artifact directory to assemble-release.ps1; standalone plugin publication is disabled by default."
 } finally {
     if ($oldEnvironment) {
         Set-Item -Path $environmentPath -Value $oldEnvironment.Value

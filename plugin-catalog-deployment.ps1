@@ -1,4 +1,4 @@
-# Publish the mutable plugin catalog release asset.
+# Maintain the legacy plugin catalog compatibility pointer.
 
 param([Parameter(Mandatory = $true)][string]$CatalogPath)
 
@@ -56,4 +56,4 @@ Set-ReleaseNotLatest $repository $channelTag
 $asset = gh release view $channelTag --repo $repository --json assets | ConvertFrom-Json
 $matching = @($asset.assets | Where-Object { $_.name -eq "plugins-index.json" })
 if ($matching.Count -ne 1) { throw "Plugin catalog asset verification failed." }
-Write-Host "Plugin catalog published: https://github.com/$repository/releases/download/$channelTag/plugins-index.json"
+Write-Host "Compatibility plugin list updated: https://github.com/$repository/releases/download/$channelTag/plugins-index.json"

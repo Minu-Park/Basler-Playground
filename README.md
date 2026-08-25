@@ -58,9 +58,9 @@ Drag the auto-generated slider to adjust `range` live — the processing pipelin
 
 Download the latest installer from the [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest) page.
 
-Core and device integrations are released independently. The Core installer may be Core-only; use Playground's **Help > Plugins** package manager to download Camera, Frame Grabber, Gocator, or Heliotis C4 packages from the signed catalog. Plugin packages are activated after restarting Playground, so a device-only update does not require a Core reinstall.
+Each official Core release is one GitHub release containing a Full Package installer, a Core-only installer, and an immutable snapshot of the independently versioned plugin packages selected for that Core tag. Full is the default user-facing package; Core-only is the minimal profile for machines that do not need bundled device SDKs. Use Playground's **Help > Plugins** package manager to install or update device packages after either profile is installed. Plugin packages are activated after restarting Playground, so a device-only update does not require a Core reinstall.
 
-GitHub's **Latest** release is reserved for stable Core installers. The mutable `plugin-channel` catalog and individual `plugin-*` releases are explicitly excluded from that pointer; use their exact download URLs through the catalog or release tools.
+GitHub's **Latest** release is reserved for stable Core releases. The `plugins-index.json` asset and all plugin ZIPs live in the same Core release; `plugin-channel` is retained only as a compatibility pointer for already published binaries. New releases do not create individual `plugin-*` package releases.
 
 > **Note**: This repository hosts the release page and installer distribution only. Source code is not included.
 
@@ -84,14 +84,21 @@ Basler Playground integrates with the following open-source hardware driver repo
 - 📦 **Latest Release**: [Download](https://github.com/Minu-Park/Basler-Playground/releases/latest)
 - 🐛 **Issues**: [Report a Bug](https://github.com/Minu-Park/Basler-Playground/issues)
 
+## Release layout
+
+- A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is one GitHub release record containing Core, Full, Plugins, checksums, `plugins-index.json`, and profile-aware update metadata.
+- A plugin package keeps its own version and source binding, but its ZIP and checksum are uploaded as assets of the matching Core release.
+- Core stable releases own GitHub's `Latest` pointer. Beta releases and the mutable compatibility pointers must never become `Latest`.
+
 ## Release tools
 
-- `installer.ps1 --tag <core-tag> --core-only` builds the lightweight Core installer.
+- `installer.ps1 --tag <core-tag> --output-directory <directory>` builds the Full Package installer; add `--core-only` for the lightweight Core installer. Use separate output directories for the two profiles.
+- `assemble-release.ps1 -Tag <core-tag> -CoreArtifactDirectory <directory> -FullArtifactDirectory <directory> -PluginArtifactRoot <directory>` creates one combined release manifest and asset set.
+- `deployment.ps1 -ArtifactDirectory <directory>` validates and uploads all profiles and plugin assets to one release. Use `-AllowPublished` only when consolidating a previously published release that is known to be incomplete.
 - `plugin-package.ps1 --core-tag <core-tag> --source-ref <immutable-parent-ref> --plugin <id> --version <plugin-version>` builds one device-plugin ZIP.
-- `plugin-deployment.ps1 -ArtifactDirectory <directory>` uploads one plugin draft release.
-- `plugin-catalog.ps1 -CoreTag <core-tag>` and `plugin-catalog-deployment.ps1 -CatalogPath <path>` publish the mutable plugin catalog asset.
+- `plugin-catalog.ps1 -CoreTag <core-tag> -ReleaseTag <release-tag>` generates URLs for the matching Core release. `plugin-catalog-deployment.ps1` is reserved for maintaining the legacy compatibility pointer.
 
-`--source-ref` is separate from the compatible Core tag so a parent commit containing only one device submodule update can produce a plugin release without rebuilding or replacing Core.
+`--source-ref` is separate from the compatible Core tag so a parent commit containing only one device submodule update can produce a plugin package without rebuilding or replacing the Core source tag; the package is included in the next complete release asset set.
 
 ---
 
