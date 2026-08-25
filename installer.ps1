@@ -111,8 +111,7 @@ if (Test-Path $pylonPath) {
 
 Push-Location $checkout
 try {
-    $packageArguments = @("Release")
-    if ($coreOnly) { $packageArguments += "CoreOnly" }
+    $packageArguments = @("Release", $(if ($coreOnly) { "Core" } else { "Full" }))
     Invoke-NativeCommand ".\package_bundle.bat" $packageArguments "Playground Inno Setup packaging failed"
 } finally {
     Pop-Location

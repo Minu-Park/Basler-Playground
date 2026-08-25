@@ -116,12 +116,12 @@ $pluginRoot = $null
 try {
     Push-Location $checkout
     try {
-        Invoke-NativeCommand ".\package_bundle.bat" @("Release", "PluginOnly") "Plugin bundle staging failed"
+        Invoke-NativeCommand ".\package_bundle.bat" @("Release", "Plugins") "Plugin bundle staging failed"
     } finally {
         Pop-Location
     }
 
-    $pluginRoot = Join-Path $checkout "build\bundle\Release\plugins\$pluginId"
+    $pluginRoot = Join-Path $checkout "build\bundle\Release\plugins\$pluginId\current"
     if (-not (Test-Path (Join-Path $pluginRoot "plugin.json"))) {
         throw "Plugin manifest was not staged: $pluginRoot"
     }
