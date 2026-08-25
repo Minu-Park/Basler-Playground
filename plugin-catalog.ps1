@@ -21,6 +21,12 @@ if ($catalogReleaseTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|
 $root = if ($ArtifactRoot) { (Resolve-Path -LiteralPath $ArtifactRoot -ErrorAction Stop).Path } else { (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "dist") -ErrorAction Stop).Path }
 $output = if ($OutputPath) { $OutputPath } else { Join-Path $root "plugins-index.json" }
 $expectedPluginIds = @("camera", "framegrabber", "gocator", "heliotis-c4")
+$pluginDisplayNames = @{
+    camera = "Camera"
+    framegrabber = "FrameGrabber"
+    gocator = "Gocator"
+    "heliotis-c4" = "Heliotis-C4"
+}
 $artifactFiles = @(Get-ChildItem -LiteralPath $root -Directory -Filter "plugin-*" | ForEach-Object {
     $candidate = Join-Path $_.FullName "plugin-artifacts.json"
     if (Test-Path $candidate) { Get-Item -LiteralPath $candidate }
@@ -38,7 +44,7 @@ foreach ($artifactFile in $artifactFiles) {
     }
     if ([string]$artifact.packageSha256 -notmatch '^[0-9a-f]{64}$') { throw "Invalid package hash for $id." }
     # Keep the compatibility pointer aligned with the public asset naming contract.
-    $packageName = "BaslerPlayground-Plugin-$id-v$($artifact.pluginVersion)-windows-x64.zip"
+    $packageName = "Plugin-$($pluginDisplayNames[$id])-v$($artifact.pluginVersion)-Windows-x64.zip"
     $entriesById[$id] = [ordered]@{
         id = $id
         displayName = [string]$artifact.displayName

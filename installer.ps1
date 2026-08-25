@@ -137,9 +137,9 @@ $dist = if ($arguments.OutputDirectory) {
 }
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 $installerName = if ($coreOnly) {
-    "BaslerPlayground-$PlaygroundTag-Core-SimulationOnly-windows-x64.exe"
+    "BaslerPlayground-$PlaygroundTag-Core-Windows-x64.exe"
 } else {
-    "BaslerPlayground-$PlaygroundTag-Full-WithPlugins-windows-x64.exe"
+    "BaslerPlayground-$PlaygroundTag-Full-Windows-x64.exe"
 }
 $sourceInstaller = Join-Path $checkout "build\bundle\BaslerPlayground-$PlaygroundTag-windows-x64.exe"
 if (-not (Test-Path $sourceInstaller)) {

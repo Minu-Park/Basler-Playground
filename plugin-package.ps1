@@ -64,6 +64,12 @@ $sourceRef = [string]$arguments.SourceRef
 $pluginId = [string]$arguments.PluginId
 $pluginVersion = [string]$arguments.PluginVersion
 $allowedPlugins = @("camera", "framegrabber", "gocator", "heliotis-c4")
+$pluginDisplayNames = @{
+    camera = "Camera"
+    framegrabber = "FrameGrabber"
+    gocator = "Gocator"
+    "heliotis-c4" = "Heliotis-C4"
+}
 if ($coreTag -notmatch '^v((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))(?:-beta\.([1-9][0-9]*))?$') {
     throw "Core tag must be vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-beta.N."
 }
@@ -137,7 +143,7 @@ try {
 
     $dist = Join-Path $root "dist\plugin-$pluginId-v$pluginVersion"
     New-Item -ItemType Directory -Force -Path $dist | Out-Null
-    $zipName = "BaslerPlayground-Plugin-$pluginId-v$pluginVersion-windows-x64.zip"
+    $zipName = "Plugin-$($pluginDisplayNames[$pluginId])-v$pluginVersion-Windows-x64.zip"
     $zipPath = Join-Path $dist $zipName
     if (Test-Path $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
     Compress-Archive -Path (Join-Path $pluginRoot "*") -DestinationPath $zipPath -CompressionLevel Optimal -Force

@@ -48,16 +48,16 @@ Invoke-NativeCommand gh @("auth", "status") "GitHub CLI authentication check fai
 $metadataName = if ($isPrerelease) { "latest-beta.json" } else { "latest.json" }
 $manifestAssets = @($manifest.assets)
 if ($manifest.schemaVersion -eq 2) {
-    $installerName = "BaslerPlayground-$PlaygroundTag-Core-SimulationOnly-windows-x64.exe"
+    $installerName = "BaslerPlayground-$PlaygroundTag-Core-Windows-x64.exe"
     $expectedAssetNames = @($installerName, "$installerName.sha256", $metadataName)
     if ($manifestAssets.Count -ne $expectedAssetNames.Count -or @($manifestAssets.fileName | Sort-Object -Unique).Count -ne $expectedAssetNames.Count -or @($expectedAssetNames | Where-Object { $_ -notin $manifestAssets.fileName }).Count -gt 0) { throw "Core artifact manifest must contain exactly the three release assets for $PlaygroundTag." }
 } else {
-    $installerName = "BaslerPlayground-$PlaygroundTag-Core-SimulationOnly-windows-x64.exe"
-    $fullInstallerName = "BaslerPlayground-$PlaygroundTag-Full-WithPlugins-windows-x64.exe"
+    $installerName = "BaslerPlayground-$PlaygroundTag-Core-Windows-x64.exe"
+    $fullInstallerName = "BaslerPlayground-$PlaygroundTag-Full-Windows-x64.exe"
     $expectedAssetNames = @($manifestAssets.fileName)
     $requiredNames = @($installerName, "$installerName.sha256", $fullInstallerName, "$fullInstallerName.sha256", $metadataName, "plugins-index.json")
     if (@($expectedAssetNames | Sort-Object -Unique).Count -ne $expectedAssetNames.Count -or @($requiredNames | Where-Object { $_ -notin $expectedAssetNames }).Count -gt 0) { throw "Combined artifact manifest is missing a required Core, Full, or plugin asset." }
-    $pluginPackages = @($expectedAssetNames | Where-Object { $_ -match '^BaslerPlayground-Plugin-(camera|framegrabber|gocator|heliotis-c4)-.+-windows-x64\.zip$' })
+    $pluginPackages = @($expectedAssetNames | Where-Object { $_ -match '^Plugin-(Camera|FrameGrabber|Gocator|Heliotis-C4)-.+-Windows-x64\.zip$' })
     if ($pluginPackages.Count -ne 4 -or @($pluginPackages | ForEach-Object { "$_.sha256" } | Where-Object { $_ -notin $expectedAssetNames }).Count -ne 0) { throw "Combined artifact manifest must contain four plugin ZIPs and four checksum sidecars." }
 }
 $assets = @{}

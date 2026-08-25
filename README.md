@@ -88,7 +88,7 @@ Basler Playground integrates with the following open-source hardware driver repo
 
 - A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is one GitHub release record containing Core, Full, Plugins, checksums, `plugins-index.json`, and profile-aware update metadata.
 - A plugin package keeps its own version and source binding, but its ZIP and checksum are uploaded as assets of the matching Core release.
-- Public asset names identify the download choice: `BaslerPlayground-vX.Y.Z[-beta.N]-Core-SimulationOnly-windows-x64.exe`, `BaslerPlayground-vX.Y.Z[-beta.N]-Full-WithPlugins-windows-x64.exe`, and `BaslerPlayground-Plugin-<id>-v<version>-windows-x64.zip`.
+- Public asset names identify the download choice: `BaslerPlayground-vX.Y.Z[-beta.N]-Core-Windows-x64.exe`, `BaslerPlayground-vX.Y.Z[-beta.N]-Full-Windows-x64.exe`, and `Plugin-<PluginName>-v<version>-Windows-x64.zip`.
 - Core stable releases own GitHub's `Latest` pointer. Beta releases and the mutable compatibility pointers must never become `Latest`.
 
 ## Release tools

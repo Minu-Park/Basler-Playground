@@ -74,8 +74,8 @@ $output = if ($OutputDirectory) {
 }
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 
-$coreInstallerName = "BaslerPlayground-$Tag-Core-SimulationOnly-windows-x64.exe"
-$fullInstallerName = "BaslerPlayground-$Tag-Full-WithPlugins-windows-x64.exe"
+$coreInstallerName = "BaslerPlayground-$Tag-Core-Windows-x64.exe"
+$fullInstallerName = "BaslerPlayground-$Tag-Full-Windows-x64.exe"
 $coreInstaller = Join-Path $output $coreInstallerName
 $fullInstaller = Join-Path $output $fullInstallerName
 Copy-Item -LiteralPath $core.Installer.FullName -Destination $coreInstaller -Force
@@ -112,6 +112,12 @@ $platforms = @(
 )
 
 $pluginIds = @("camera", "framegrabber", "gocator", "heliotis-c4")
+$pluginDisplayNames = @{
+    camera = "Camera"
+    framegrabber = "FrameGrabber"
+    gocator = "Gocator"
+    "heliotis-c4" = "Heliotis-C4"
+}
 $selectedPlugins = @()
 foreach ($pluginId in $pluginIds) {
     $candidates = @(Get-ChildItem -LiteralPath (Resolve-Path -LiteralPath $PluginArtifactRoot -ErrorAction Stop).Path -Directory -Filter "plugin-$pluginId-v*" | ForEach-Object {
@@ -134,7 +140,7 @@ foreach ($pluginId in $pluginIds) {
     }
     # Normalize the public name so older locally staged artifacts can be reassembled.
     $packageVersion = [string]$candidate.Manifest.pluginVersion
-    $packageName = "BaslerPlayground-Plugin-$pluginId-v$packageVersion-windows-x64.zip"
+    $packageName = "Plugin-$($pluginDisplayNames[$pluginId])-v$packageVersion-Windows-x64.zip"
     $packageOut = Join-Path $output $packageName
     Copy-Item -LiteralPath $package.FullName -Destination $packageOut -Force
     $checksumOut = "$packageOut.sha256"
