@@ -26,6 +26,20 @@ function Assert-FileHash([System.IO.FileInfo]$File, [string]$ExpectedHash) {
     if ($actual -ne $ExpectedHash) { throw "Artifact hash mismatch for $($File.Name)." }
     return $actual
 }
+function Set-ReleaseNotLatest {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Tag
+    )
+
+    # Device-plugin releases must never become the product's Latest release.
+    $release = (Invoke-NativeCommand gh @("api", "repos/$Repository/releases/tags/$Tag") "Failed to resolve release $Tag" | ConvertFrom-Json)
+    $releaseId = [string]$release.id
+    if ([string]::IsNullOrWhiteSpace($releaseId)) {
+        throw "Release $Tag did not return a GitHub release ID."
+    }
+    Invoke-NativeCommand gh @("api", "--method", "PATCH", "repos/$Repository/releases/$releaseId", "-F", "make_latest=false") "Failed to exclude release $Tag from GitHub Latest" | Out-Null
+}
 
 Require-Command gh
 $directory = (Resolve-Path -LiteralPath $ArtifactDirectory -ErrorAction Stop).Path
@@ -71,6 +85,7 @@ if ($releaseExists) {
 } else {
     Invoke-NativeCommand gh (@("release", "create", $expectedReleaseTag, "--repo", $repository) + $assetPaths + @("--title", "Basler Playground $pluginId plugin $pluginVersion", "--notes-file", $notesFile.FullName) + $releaseTypeArguments + @("--draft")) "Failed to create plugin draft release"
 }
+Set-ReleaseNotLatest $repository $expectedReleaseTag
 
 $uploaded = (Invoke-NativeCommand gh @("release", "view", $expectedReleaseTag, "--repo", $repository, "--json", "isDraft,assets") "Failed to verify plugin release assets" | ConvertFrom-Json)
 if (-not $uploaded.isDraft) { throw "Plugin release was unexpectedly published during deployment." }

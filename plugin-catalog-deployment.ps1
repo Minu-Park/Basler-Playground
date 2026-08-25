@@ -15,6 +15,24 @@ if (@($document.plugins.id | Sort-Object -Unique).Count -ne 4) { throw "Catalog 
 $repository = "Minu-Park/Basler-Playground"
 & gh auth status
 if ($LASTEXITCODE -ne 0) { throw "GitHub CLI authentication check failed." }
+
+function Set-ReleaseNotLatest {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Tag
+    )
+
+    # Keep the mutable catalog out of GitHub's product Latest release pointer.
+    $release = (gh api "repos/$Repository/releases/tags/$Tag" | ConvertFrom-Json)
+    if ($LASTEXITCODE -ne 0 -or -not $release.id) {
+        throw "Failed to resolve release $Tag."
+    }
+    & gh api --method PATCH "repos/$Repository/releases/$($release.id)" -F make_latest=false | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to exclude release $Tag from GitHub Latest."
+    }
+}
+
 $channelTag = "plugin-channel"
 $releaseExists = $false
 $previousErrorActionPreference = $ErrorActionPreference
@@ -26,11 +44,15 @@ try {
     $ErrorActionPreference = $previousErrorActionPreference
 }
 if (-not $releaseExists) {
-    & gh release create $channelTag --repo $repository --title "Basler Playground plugin catalog" --notes "Mutable catalog for separately released device plugins."
+    & gh release create $channelTag --repo $repository --prerelease --title "Basler Playground plugin catalog" --notes "Mutable catalog for separately released device plugins."
     if ($LASTEXITCODE -ne 0) { throw "Failed to create the plugin catalog release." }
+} else {
+    & gh release edit $channelTag --repo $repository --prerelease
+    if ($LASTEXITCODE -ne 0) { throw "Failed to keep the plugin catalog release as a prerelease." }
 }
 & gh release upload $channelTag --repo $repository $catalog.FullName --clobber
 if ($LASTEXITCODE -ne 0) { throw "Failed to upload the plugin catalog." }
+Set-ReleaseNotLatest $repository $channelTag
 $asset = gh release view $channelTag --repo $repository --json assets | ConvertFrom-Json
 $matching = @($asset.assets | Where-Object { $_.name -eq "plugins-index.json" })
 if ($matching.Count -ne 1) { throw "Plugin catalog asset verification failed." }

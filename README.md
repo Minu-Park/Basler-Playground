@@ -60,6 +60,8 @@ Download the latest installer from the [**Releases**](https://github.com/Minu-Pa
 
 Core and device integrations are released independently. The Core installer may be Core-only; use Playground's **Help > Plugins** package manager to download Camera, Frame Grabber, Gocator, or Heliotis C4 packages from the signed catalog. Plugin packages are activated after restarting Playground, so a device-only update does not require a Core reinstall.
 
+GitHub's **Latest** release is reserved for stable Core installers. The mutable `plugin-channel` catalog and individual `plugin-*` releases are explicitly excluded from that pointer; use their exact download URLs through the catalog or release tools.
+
 > **Note**: This repository hosts the release page and installer distribution only. Source code is not included.
 
 ### System Requirements
