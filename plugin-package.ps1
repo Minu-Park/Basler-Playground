@@ -137,7 +137,7 @@ try {
 
     $dist = Join-Path $root "dist\plugin-$pluginId-v$pluginVersion"
     New-Item -ItemType Directory -Force -Path $dist | Out-Null
-    $zipName = "BaslerPlayground-$pluginId-v$pluginVersion-windows-x64.zip"
+    $zipName = "BaslerPlayground-Plugin-$pluginId-v$pluginVersion-windows-x64.zip"
     $zipPath = Join-Path $dist $zipName
     if (Test-Path $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
     Compress-Archive -Path (Join-Path $pluginRoot "*") -DestinationPath $zipPath -CompressionLevel Optimal -Force

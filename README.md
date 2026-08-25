@@ -58,7 +58,7 @@ Drag the auto-generated slider to adjust `range` live — the processing pipelin
 
 Download the latest installer from the [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest) page.
 
-Each official Core release is one GitHub release containing a Full Package installer, a Core-only installer, and an immutable snapshot of the independently versioned plugin packages selected for that Core tag. Full is the default user-facing package; Core-only is the minimal profile for machines that do not need bundled device SDKs. Use Playground's **Help > Plugins** package manager to install or update device packages after either profile is installed. Plugin packages are activated after restarting Playground, so a device-only update does not require a Core reinstall.
+Each official Core release is one GitHub release containing a Full Package installer, a Core-only installer, and an immutable snapshot of the independently versioned plugin packages selected for that Core tag. Full is the default user-facing package; Core-only is the minimal profile for machines that do not need bundled device SDKs. Use Playground's **Help > Plugins** package manager to install or update device packages after either profile is installed. Plugin packages are activated after affected sessions close, so a device-only update does not require a Core reinstall or host restart.
 
 GitHub's **Latest** release is reserved for stable Core releases. The `plugins-index.json` asset and all plugin ZIPs live in the same Core release; `plugin-channel` is retained only as a compatibility pointer for already published binaries. New releases do not create individual `plugin-*` package releases.
 
@@ -88,6 +88,7 @@ Basler Playground integrates with the following open-source hardware driver repo
 
 - A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is one GitHub release record containing Core, Full, Plugins, checksums, `plugins-index.json`, and profile-aware update metadata.
 - A plugin package keeps its own version and source binding, but its ZIP and checksum are uploaded as assets of the matching Core release.
+- Public asset names identify the download choice: `BaslerPlayground-vX.Y.Z[-beta.N]-Core-SimulationOnly-windows-x64.exe`, `BaslerPlayground-vX.Y.Z[-beta.N]-Full-WithPlugins-windows-x64.exe`, and `BaslerPlayground-Plugin-<id>-v<version>-windows-x64.zip`.
 - Core stable releases own GitHub's `Latest` pointer. Beta releases and the mutable compatibility pointers must never become `Latest`.
 
 ## Release tools

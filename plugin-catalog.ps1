@@ -37,6 +37,8 @@ foreach ($artifactFile in $artifactFiles) {
         throw "Plugin artifact $id is not built for Core $CoreTag."
     }
     if ([string]$artifact.packageSha256 -notmatch '^[0-9a-f]{64}$') { throw "Invalid package hash for $id." }
+    # Keep the compatibility pointer aligned with the public asset naming contract.
+    $packageName = "BaslerPlayground-Plugin-$id-v$($artifact.pluginVersion)-windows-x64.zip"
     $entriesById[$id] = [ordered]@{
         id = $id
         displayName = [string]$artifact.displayName
@@ -46,8 +48,8 @@ foreach ($artifactFile in $artifactFiles) {
         releaseTag = $catalogReleaseTag
         platforms = [ordered]@{
             "windows-x64" = [ordered]@{
-                fileName = [string]$artifact.packageName
-                url = "https://github.com/Minu-Park/Basler-Playground/releases/download/$catalogReleaseTag/$($artifact.packageName)"
+                fileName = $packageName
+                url = "https://github.com/Minu-Park/Basler-Playground/releases/download/$catalogReleaseTag/$packageName"
                 sha256 = [string]$artifact.packageSha256
             }
         }

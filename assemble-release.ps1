@@ -74,8 +74,8 @@ $output = if ($OutputDirectory) {
 }
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 
-$coreInstallerName = $core.Installer.Name
-$fullInstallerName = "BaslerPlayground-$Tag-full-windows-x64.exe"
+$coreInstallerName = "BaslerPlayground-$Tag-Core-SimulationOnly-windows-x64.exe"
+$fullInstallerName = "BaslerPlayground-$Tag-Full-WithPlugins-windows-x64.exe"
 $coreInstaller = Join-Path $output $coreInstallerName
 $fullInstaller = Join-Path $output $fullInstallerName
 Copy-Item -LiteralPath $core.Installer.FullName -Destination $coreInstaller -Force
@@ -126,12 +126,15 @@ foreach ($pluginId in $pluginIds) {
         throw "Expected exactly one $pluginId artifact bound to $Tag, found $($candidates.Count)."
     }
     $candidate = $candidates[0]
-    $packageName = [string]$candidate.Manifest.packageName
-    $package = Get-RequiredFile (Join-Path $candidate.Directory.FullName $packageName)
+    $sourcePackageName = [string]$candidate.Manifest.packageName
+    $package = Get-RequiredFile (Join-Path $candidate.Directory.FullName $sourcePackageName)
     $packageHash = (Get-FileHash -LiteralPath $package.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($packageHash -ne [string]$candidate.Manifest.packageSha256) {
         throw "Package hash mismatch for $pluginId."
     }
+    # Normalize the public name so older locally staged artifacts can be reassembled.
+    $packageVersion = [string]$candidate.Manifest.pluginVersion
+    $packageName = "BaslerPlayground-Plugin-$pluginId-v$packageVersion-windows-x64.zip"
     $packageOut = Join-Path $output $packageName
     Copy-Item -LiteralPath $package.FullName -Destination $packageOut -Force
     $checksumOut = "$packageOut.sha256"
