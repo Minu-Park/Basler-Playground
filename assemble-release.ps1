@@ -176,10 +176,11 @@ $metadataName = if ($isBeta) { "latest-beta.json" } else { "latest.json" }
 $catalogPath = Join-Path $output "plugins-index.json"
 [System.IO.File]::WriteAllText($catalogPath, ($catalog | ConvertTo-Json -Depth 10), $utf8NoBom)
 
+$releaseKind = if ($isBeta) { "beta release" } else { "stable release" }
 $releaseNotes = @"
 ## What's New
 
-- **Core / Full / Plugins**: The beta release contains the lightweight Core installer, the Full installer, and the four independently installable device-plugin packages in one GitHub release.
+- **Core / Full / Plugins**: The $releaseKind contains the lightweight Core installer, the Full installer, and the four independently installable device-plugin packages in one GitHub release.
 - **Simulation-first Core**: Core starts without device plugins; Help > Plugins installs or updates Camera, Frame Grabber, Gocator, and Heliotis C4 packages.
 - **Verified packages**: Every installer and plugin package has a SHA-256 sidecar and is bound to Core $Tag.
 
