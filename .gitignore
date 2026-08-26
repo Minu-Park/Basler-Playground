@@ -1,4 +1,4 @@
-# Build outputs
+# Build leftovers from the retired local packaging checkout
 build/
 dist/
 bin/
@@ -6,15 +6,11 @@ obj/
 pylon/
 playground/
 
-# Local OS & Root Scratch files
+# Local OS files
 .DS_Store
 Thumbs.db
 desktop.ini
-/*.png
-/*.webp
 
 # IDE config files
 .vscode/
 .idea/
-*.suo
-*.user

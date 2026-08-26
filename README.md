@@ -58,11 +58,11 @@ Drag the auto-generated slider to adjust `range` live — the processing pipelin
 
 Download the latest installer from the [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest) page.
 
-Each official Core release is one GitHub release containing a Full Package installer, a Core-only installer, and an immutable snapshot of the independently versioned plugin packages selected for that Core tag. Full is the default user-facing package; Core-only is the minimal profile for machines that do not need bundled device SDKs. Use Playground's **Help > Plugins** package manager to install or update device packages after either profile is installed. Plugin packages are activated after affected sessions close, so a device-only update does not require a Core reinstall or host restart.
+Each official product tag can contain a **Full** installer (complete system with device plugins) and a **Core** installer (host only). Full is the default user-facing package; Core is the lightweight profile for machines that add device packages later. Use **Device > Manage Plugins** to install or update device packages after either profile is installed. Plugin packages are published separately in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins).
 
-GitHub's **Latest** release is reserved for stable Core releases. The `plugins-index.json` asset and all plugin ZIPs live in the same Core release; `plugin-channel` is retained only as a compatibility pointer for already published binaries. New releases do not create individual `plugin-*` package releases.
+GitHub's **Latest** release is reserved for stable Core/Full releases. Plugin discovery uses the Plugins repository `plugin-channel` catalog.
 
-> **Note**: This repository hosts the release page and installer distribution only. Source code is not included.
+> **Note**: This repository hosts the public website, release page, and installer distribution only. Source code, build, and publication tooling live in the parent Playground workspace `deploy/` directory.
 
 ### System Requirements
 
@@ -86,20 +86,15 @@ Basler Playground integrates with the following open-source hardware driver repo
 
 ## Release layout
 
-- A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is one GitHub release record containing Core, Full, Plugins, checksums, `plugins-index.json`, and profile-aware update metadata.
-- A plugin package keeps its own version and source binding, but its ZIP and checksum are uploaded as assets of the matching Core release.
-- Public asset names identify the download choice: `BaslerPlayground-vX.Y.Z[-beta.N]-Core-Windows-x64.exe`, `BaslerPlayground-vX.Y.Z[-beta.N]-Full-Windows-x64.exe`, and `Plugin-<PluginName>-v<version>-Windows-x64.zip`.
-- Core stable releases own GitHub's `Latest` pointer. Beta releases and the mutable compatibility pointers must never become `Latest`.
+- A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is the Core/Full GitHub release record.
+- Public installer names are `BaslerPlayground-vX.Y.Z[-beta.N]-Core-Windows-x64.exe` and `BaslerPlayground-vX.Y.Z[-beta.N]-Full-Windows-x64.exe`, each with a SHA-256 sidecar.
+- Channel metadata is `latest.json` or `latest-beta.json` on the product tag. The mutable `beta-channel` alias is updated by Playground `deploy/publish.ps1 -Publish` on a beta tag, or by `deploy/publish.ps1 -BetaChannel`.
+- Device plugin ZIPs and `plugins-index.json` live in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins), not in this repository.
+- Stable product releases own GitHub's `Latest` pointer. Beta releases and the `beta-channel` pointer must never become `Latest`.
 
-## Release tools
+## Release tooling
 
-- `installer.ps1 --tag <core-tag> --output-directory <directory>` builds the Full Package installer; add `--core-only` for the lightweight Core installer. Use separate output directories for the two profiles.
-- `assemble-release.ps1 -Tag <core-tag> -CoreArtifactDirectory <directory> -FullArtifactDirectory <directory> -PluginArtifactRoot <directory>` creates one combined release manifest and asset set.
-- `deployment.ps1 -ArtifactDirectory <directory>` validates and uploads all profiles and plugin assets to one release. Use `-AllowPublished` only when consolidating a previously published release that is known to be incomplete.
-- `plugin-package.ps1 --core-tag <core-tag> --source-ref <immutable-parent-ref> --plugin <id> --version <plugin-version>` builds one device-plugin ZIP.
-- `plugin-catalog.ps1 -CoreTag <core-tag> -ReleaseTag <release-tag>` generates URLs for the matching Core release. `plugin-catalog-deployment.ps1` is reserved for maintaining the legacy compatibility pointer.
-
-`--source-ref` is separate from the compatible Core tag so a parent commit containing only one device submodule update can produce a plugin package without rebuilding or replacing the Core source tag; the package is included in the next complete release asset set.
+Build and publication stay in the parent Playground workspace `deploy/package.ps1` and `deploy/publish.ps1`. This repository must not gain installer, assemble, or deployment scripts.
 
 ---
 
