@@ -87,7 +87,8 @@ Basler Playground integrates with the following open-source hardware driver repo
 ## Release layout
 
 - A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is the Core/Full GitHub release record.
-- Public installer names are `BaslerPlayground-vX.Y.Z[-beta.N]-Core-Windows-x64.exe` and `BaslerPlayground-vX.Y.Z[-beta.N]-Full-Windows-x64.exe`, each with a SHA-256 sidecar.
+- Public installer names are `BaslerPlayground-vX.Y.Z[-beta.N]-Core-Windows-x64.exe` and `BaslerPlayground-vX.Y.Z[-beta.N]-Full-Windows-x64.exe`.
+- Verify an installer by comparing the SHA-256 digest on the GitHub release page (or the `sha256` field in that tag's `latest.json` or `latest-beta.json`) with `Get-FileHash <file> -Algorithm SHA256` on Windows.
 - Channel metadata is `latest.json` or `latest-beta.json` on the product tag. The mutable `beta-channel` alias is updated by Playground `deploy/publish.ps1 -Publish` on a beta tag, or by `deploy/publish.ps1 -BetaChannel`.
 - Device plugin ZIPs and `plugins-index.json` live in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins), not in this repository.
 - Stable product releases own GitHub's `Latest` pointer. Beta releases and the `beta-channel` pointer must never become `Latest`.
