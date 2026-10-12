@@ -24,22 +24,23 @@
 
 ## Overview
 
-**Basler Playground** is a multi-device vision workspace that controls every Basler 2D camera, 3D sensor, and CoaXPress framegrabber in a single unified suite. It features a built-in **Script Editor** with **Interactive Parameters** — annotate any variable with `// @interactive-range(min, max)` and the application automatically generates live GUI controls for real-time algorithm tuning without stopping image acquisition.
+**Basler Playground** is a workspace for Basler vision devices. Connect Basler 2D and 3D cameras, CoaXPress framegrabbers, and LMI Gocator sensors in one application, watch the live image, and adjust a processing script while acquisition keeps running.
 
-## Key Features
+## What you can do
 
-| Feature | Description |
-|---------|-------------|
-| **Session Workspace** | Unified multi-device authority with multi-window workspace for managing active camera streams, parameters, and live inspection pipelines. |
-| **Interactive Parameters** | Write processing scripts in Script Editor. `// @interactive` annotations auto-construct live GUI sliders for real-time JIT parameter hot-swapping. |
-| **2D & 3D Visualization** | High-speed rendering for 2D image pan/zoom, 3D point cloud surfaces, profile measurements, and ROI tools. |
-| **Basler 2D & 3D Cameras** | Full acquisition for Basler GigE, USB3, and 3D vision cameras with device status contracts. |
-| **Basler Framegrabber** | Hardware abstraction for Basler CoaXPress framegrabbers with multi-stream DMA ring buffers. |
-| **LMI 3D Sensors** | Integration with LMI Gocator 3D sensors and profilers via GoPxL SDK. |
+| Capability | What it does |
+|------------|----------------|
+| **Session workspace** | Keep several devices, their settings, and live inspection views together. Use more than one window when the job needs it. |
+| **Script Editor** | Write a C++ script that reads the current frame and shows the processed result in the viewer. |
+| **Interactive Parameters** | Mark a variable in the script. Playground turns that mark into a control you can move while the camera stays live. |
+| **2D and 3D view** | Pan and zoom images, inspect profiles and point clouds, and place regions of interest. |
+| **Basler cameras** | Acquire from Basler GigE, USB3, and 3D cameras. |
+| **Basler framegrabbers** | Acquire CoaXPress streams from Basler framegrabbers. |
+| **LMI Gocator** | Connect Gocator 3D sensors and profilers and inspect their profiles and surfaces. |
 
 ## Interactive Parameters
 
-The core differentiator of Basler Playground is the **Interactive Parameters** system. Add simple annotations in the Script Editor and the application automatically generates GUI controls that hot-swap algorithm parameters in real time:
+Add an annotation next to a variable in the Script Editor. Playground builds a control for it, so you can tune the script on the live image.
 
 ```cpp
 auto input = get().toMatGray();
@@ -52,49 +53,42 @@ cv::threshold(input, output, range, 255, cv::THRESH_BINARY);
 show(output);
 ```
 
-Drag the auto-generated slider to adjust `range` live — the processing pipeline updates instantly without dropping frames or restarting acquisition.
+Move the slider for `range`. The view updates from the script without starting acquisition again.
 
-## Installation
+## Download
 
-Download the latest installer from the [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest) page.
+Install the current package from [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest).
 
-Each official product tag can contain a **Full** installer (complete system with device plugins) and a **Core** installer (host only). Full is the default user-facing package; Core is the lightweight profile for machines that add device packages later. Use **Device > Manage Plugins** to install or update device packages after either profile is installed. Plugin packages are published separately in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins).
+- **Full** installs Playground together with its device packages.
+- **Core** installs Playground only. Add or update cameras, framegrabbers, and sensors later from **Device > Manage Plugins**.
 
-GitHub's **Latest** release is reserved for stable Core/Full releases. Plugin discovery uses the Plugins repository `plugin-channel` catalog.
+Further device packages are published in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins).
 
-> **Note**: This repository hosts the public website, release page, and installer distribution only. Source code, build, and publication tooling live in the parent Playground workspace `deploy/` directory.
+Each release page shows a SHA-256 digest for the installer. Compare it before you run the file:
 
-### System Requirements
+- Windows: `Get-FileHash <file> -Algorithm SHA256`
+- macOS: `shasum -a 256 <file>`
 
-- **OS**: Windows 10 / 11 (x64), macOS (Apple silicon)
+### System requirements
 
-## Ecosystem
+- Windows 10 or Windows 11 (64-bit)
+- macOS on Apple silicon, when that release includes a macOS package
 
-Basler Playground integrates with the following open-source hardware driver repositories maintained by [**Basler Korea**](https://github.com/BaslerKR):
+## Supported devices
 
-| Repository | Description |
-|------------|-------------|
-| [BaslerKR/Camera](https://github.com/BaslerKR/Camera) | Hardware driver & acquisition interface for Basler 2D and 3D vision cameras. |
-| [BaslerKR/Framegrabber](https://github.com/BaslerKR/Framegrabber) | High-throughput hardware interface for Basler CoaXPress framegrabbers. |
-| [BaslerKR/Gocator](https://github.com/BaslerKR/Gocator) | 3D sensor integration module for LMI Gocator devices via GoPxL SDK. |
+Playground uses these Basler Korea device projects:
+
+| Device | Project |
+|--------|---------|
+| Basler 2D and 3D cameras | [BaslerKR/Camera](https://github.com/BaslerKR/Camera) |
+| Basler CoaXPress framegrabbers | [BaslerKR/Framegrabber](https://github.com/BaslerKR/Framegrabber) |
+| LMI Gocator sensors | [BaslerKR/Gocator](https://github.com/BaslerKR/Gocator) |
 
 ## Links
 
 - 🌐 **Homepage**: [playground.minu.kr](https://playground.minu.kr)
-- 📦 **Latest Release**: [Download](https://github.com/Minu-Park/Basler-Playground/releases/latest)
-- 🐛 **Issues**: [Report a Bug](https://github.com/Minu-Park/Basler-Playground/issues)
-
-## Release layout
-
-- A `vMAJOR.MINOR.PATCH` or `vMAJOR.MINOR.PATCH-beta.N` release is the Core/Full GitHub release record.
-- Public installer names are `BaslerPlayground-vX.Y.Z[-beta.N]-Core-Windows-x64.exe` and `BaslerPlayground-vX.Y.Z[-beta.N]-Full-Windows-x64.exe`, each with a SHA-256 sidecar.
-- Channel metadata is `latest.json` or `latest-beta.json` on the product tag. The mutable `beta-channel` alias is updated by Playground `deploy/publish.ps1 -Publish` on a beta tag, or by `deploy/publish.ps1 -BetaChannel`.
-- Device plugin ZIPs and `plugins-index.json` live in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins), not in this repository.
-- Stable product releases own GitHub's `Latest` pointer. Beta releases and the `beta-channel` pointer must never become `Latest`.
-
-## Release tooling
-
-Build and publication stay in the parent Playground workspace `deploy/package.ps1` and `deploy/publish.ps1`. This repository must not gain installer, assemble, or deployment scripts.
+- 📦 **Latest release**: [Download](https://github.com/Minu-Park/Basler-Playground/releases/latest)
+- 🐛 **Issues**: [Report a bug](https://github.com/Minu-Park/Basler-Playground/issues)
 
 ---
 
