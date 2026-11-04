@@ -165,6 +165,14 @@ a.release:hover{border-color:var(--hover-border)}
 .steps3 li.on .ib{border-color:var(--hover-border);background:var(--current)}
 @media (max-width:1000px){.scrolly2{height:auto}.scrolly2>.split{position:static}.steps3 li{opacity:1}}
 
+/* scroll-linked MCP conversation */
+.scrolly3{height:240vh}
+.scrolly3>.mgrid{position:sticky;top:max(84px,calc(50vh - 280px))}
+.chat .bd{min-height:372px;align-content:start}
+.chat .tool>.typing{opacity:0;transform:translateY(4px);transition:all .35s}
+.chat .tool>.typing.in{opacity:1;transform:none}
+@media (max-width:900px){.scrolly3{height:auto}.scrolly3>.mgrid{position:static}}
+
 .happ .g3{display:contents}
 .happ .vsep.g3{display:block}
 .happ.is2d .g3,.happ.is2d .vsep.g3{display:none}
@@ -666,7 +674,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <section class="section" id="mcp">
   <div class="wrap">
     <div class="sec-head reveal"><div><div class="eyebrow">MCP connection</div><h2>Let your AI client work the bench.</h2></div><p>Turn on System › MCP Connection and a trusted AI client on this computer can open sessions, connect devices, read and change features, start acquisition and capture snapshots. Editing and running scripts needs a separate approval.</p></div>
-    <div class="mgrid">
+    <div class="scrolly3" id="scrolly3"><div class="mgrid">
       <div class="app dlg mapp reveal" id="mapp">
         <div class="tt">MCP Connection<span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></div>
         <div class="body">
@@ -687,15 +695,16 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
       <div class="chat reveal" id="chat">
         <div class="hd"><span class="ico" style="--i:url(assets/icons/ai-generated-text-48.png);color:var(--accent)"></span>AI client<small>connected over MCP</small></div>
         <div class="bd">
-          <div class="u typing">The acA2440 image is saturated. Bring exposure down until it isn't, then tell me the frame rate.</div>
-          <div class="tool typing">
-            <div><b>device.parameters.search</b>"Exposure"<i>ExposureTimeAbs = 35000</i></div>
-            <div><b>device.parameters.write</b>ExposureTimeAbs: 12000<i>ok</i></div>
-            <div><b>device.parameters.read</b>ResultingFrameRateAbs<i>23.4</i></div>
+          <div class="u typing" data-step="1">The acA2440 image is saturated. Bring exposure down until it isn't, then tell me the frame rate.</div>
+          <div class="tool typing" data-step="2">
+            <div class="typing" data-step="2"><b>device.parameters.search</b>"Exposure"<i>ExposureTimeAbs = 35000</i></div>
+            <div class="typing" data-step="3"><b>device.parameters.write</b>ExposureTimeAbs: 12000<i>ok</i></div>
+            <div class="typing" data-step="4"><b>device.parameters.read</b>ResultingFrameRateAbs<i>23.4</i></div>
           </div>
-          <div class="a typing">Exposure is now 12 ms (was 35 ms) and the image is no longer clipped. The camera reports 23.4 fps.</div>
+          <div class="a typing" data-step="5">Exposure is now 12 ms (was 35 ms) and the image is no longer clipped. The camera reports 23.4 fps.</div>
         </div>
       </div>
+    </div>
     </div>
     <p class="note">Example conversation with illustrative values. <code>device.parameters.*</code> are Playground's device feature tools.</p>
   </div>
@@ -1058,9 +1067,17 @@ const mcpUrl='http://127.0.0.1:38171/mcp/'+[...crypto.getRandomValues(new Uint8A
 function setMcp(on){$('#msw').classList.toggle('on',on);$('#mst').textContent=on?'Ready · 1 client session(s)':'MCP is disabled.';const a=$('#maddr');a.textContent=on?mcpUrl:'Available after enabling MCP';a.classList.toggle('ph',!on)}
 $('#msw').onclick=()=>setMcp(!$('#msw').classList.contains('on'));
 $('#ssw').onclick=()=>{const s=$('#ssw');s.classList.toggle('on');mapp.classList.toggle('scripts',s.classList.contains('on'))};
-const chatEls=$$('#chat .typing');
-function playChat(){setTimeout(()=>setMcp(true),reduce?0:300);chatEls.forEach((el,i)=>setTimeout(()=>el.classList.add('in'),reduce?0:900+i*900))}
-new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){playChat();o.disconnect()}}),{threshold:.35}).observe($('#chat'));
+/* conversation story: step 0 connection on, 1 request, 2–4 tool calls, 5 answer.
+   Scroll position sets the step while the pair is pinned; when scrolling stops the timer reveals the rest. */
+const chatEls=$$('#chat [data-step]'),LAST=5,sc3=$('#scrolly3');let chatStep=-1,chatT=null;
+const chatVisible=()=>{const r=$('#chat').getBoundingClientRect();return r.top<innerHeight*.8&&r.bottom>innerHeight*.2};
+function showChat(n){chatStep=n;setMcp(n>=0);chatEls.forEach(el=>el.classList.toggle('in',+el.dataset.step<=n))}
+function chatTick(){clearTimeout(chatT);if(chatStep>=LAST||!chatVisible())return;chatT=setTimeout(()=>{showChat(chatStep+1);chatTick()},reduce?0:1100)}
+const pinned3=()=>getComputedStyle(sc3.firstElementChild).position==='sticky';
+addEventListener('scroll',()=>{if(!pinned3())return;const r=sc3.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0)return;
+  const k=-r.top/span;if(k<-.05||k>1.05)return;const n=Math.round(Math.min(1,Math.max(0,k))*(LAST+1))-1;
+  if(n!==chatStep)showChat(Math.max(-1,Math.min(LAST,n)));clearTimeout(chatT);chatT=setTimeout(chatTick,1500)},{passive:true});
+new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){if(chatStep<0)showChat(0);chatTick()}else clearTimeout(chatT)}),{threshold:.35}).observe($('#chat'));
 
 /* ================= Plugins (catalog names, subtitles and versions) ================= */
 const plugins=[
