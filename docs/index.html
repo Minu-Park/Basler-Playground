@@ -152,7 +152,7 @@ a.release:hover{border-color:var(--hover-border)}
 .app .sub>.tt .vm{font-weight:500;color:var(--text-2);margin-left:10px}
 .app .ab .tbtn .ico{width:19px;height:19px}
 /* scroll-linked hero: the window stays pinned while the page scrolls through the four modes */
-.scrolly{height:520vh;margin-top:64px}
+.scrolly{height:640vh;margin-top:64px}
 .scrolly .hero-stage{position:sticky;top:72px;margin-top:0}
 .happ .sub{height:clamp(400px,calc(100vh - 336px),640px)!important}
 @media (max-width:900px){.scrolly{height:auto}.scrolly .hero-stage{position:static}}
@@ -163,6 +163,7 @@ a.release:hover{border-color:var(--hover-border)}
 .steps3 li{opacity:.45;transition:opacity .35s}
 .steps3 li.on{opacity:1}
 .steps3 li.on .ib{border-color:var(--hover-border);background:var(--current)}
+.scrolly2.done{height:auto}.scrolly2.done>.split{position:static}.scrolly2.done .steps3 li{opacity:1}
 @media (max-width:1000px){.scrolly2{height:auto}.scrolly2>.split{position:static}.steps3 li{opacity:1}}
 
 /* scroll-linked MCP conversation */
@@ -922,9 +923,11 @@ function stopAuto(){autoOn=false;clearTimeout(autoT);document.documentElement.st
 canvas.addEventListener('pointerdown',()=>{if(MODES[mode].cam===OBL)stopAuto()});
 /* scroll drives the mode while the pinned window is on screen; when scrolling stops the timer takes over again */
 const scrolly=$('#scrolly');let scrollIdx=-1;
-addEventListener('scroll',()=>{if(getComputedStyle(scrolly.querySelector('.hero-stage')).position!=='sticky')return;
-  const r=scrolly.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0||r.top>0||r.bottom<innerHeight)return;
-  const idx=Math.min(3,Math.floor(-r.top/span*4));if(idx!==scrollIdx){scrollIdx=idx;if(order[idx]!==mode)setMode(order[idx])}
+const heroStage=scrolly.querySelector('.hero-stage');
+addEventListener('scroll',()=>{if(getComputedStyle(heroStage).position!=='sticky')return;
+  // progress over the distance the stage actually stays pinned; the last mode holds the final 40%
+  const r=scrolly.getBoundingClientRect(),span=r.height-heroStage.offsetHeight-72,k=-r.top/span;if(span<=0||k<0||k>1)return;
+  const idx=Math.min(3,Math.floor(k/.2));if(idx!==scrollIdx){scrollIdx=idx;if(order[idx]!==mode)setMode(order[idx])}
   if(autoOn)scheduleAuto()},{passive:true});
 /* 2D views fit the organized frame into the viewport, like the application's Fit */
 function fitTop(){if(!data)return;const t=Math.tan(THREE.MathUtils.degToRad(15)),w=data.cols*data.pitchX,h=data.rows*data.pitchY;
@@ -1051,9 +1054,16 @@ new ResizeObserver(()=>drawS()).observe(sv);
     plug.classList.toggle('blue',p>=1);plug.setAttribute('aria-label',p>=1?'Unload':'Load');
     if(p===0){logEl.innerHTML=logs[0]}else if(p>=1&&!logEl.children.length){logEl.innerHTML=logs[1]}
     $$('#stabs button')[p===2?1:0].click()}
-  addEventListener('scroll',()=>{if(getComputedStyle(sc.firstElementChild).position!=='sticky')return;
-    const r=sc.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0)return;const k=Math.min(1,Math.max(0,-r.top/span));
-    setPhase(k<.22?0:k<.4?1:2);if(k>=.4)setL(40+(k-.4)/.6*180)},{passive:true});
+  // forward only: phase and level never step back; scrolling up inside the span, or reaching its end, releases the pin
+  // with the scroll position compensated so the editor stays where it is on screen
+  const stage=sc.firstElementChild,pinned=()=>getComputedStyle(stage).position==='sticky';let lastY=scrollY,maxL=0;
+  const release=()=>{if(sc.classList.contains('done'))return;const y0=stage.getBoundingClientRect().top;sc.classList.add('done');const y1=stage.getBoundingClientRect().top;if(Math.abs(y1-y0)>1)scrollBy({top:y1-y0,behavior:'instant'})};
+  addEventListener('scroll',()=>{const up=scrollY<lastY;lastY=scrollY;if(!pinned())return;
+    const r=sc.getBoundingClientRect(),span=r.height-stage.offsetHeight-84;if(span<=0)return;const k=-r.top/span;if(k<-.05)return;
+    if(up&&k>0){release();return}
+    const kk=Math.min(1,Math.max(0,k)),p=kk<.22?0:kk<.4?1:2;if(p>phase)setPhase(p);
+    if(kk>=.4){const v=40+(kk-.4)/.6*180;if(v>maxL){maxL=v;setL(v)}}
+    if(k>=.98)release()},{passive:true});
   if(getComputedStyle(sc.firstElementChild).position==='sticky')setPhase(0);
 }
 
