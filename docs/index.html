@@ -165,6 +165,8 @@ a.release:hover{border-color:var(--hover-border)}
 .steps3 li.on{opacity:1}
 .steps3 li.on .ib{border-color:var(--hover-border);background:var(--current)}
 .scrolly2.done{height:auto}.scrolly2.done>.split{position:static}.scrolly2.done .steps3 li{opacity:1}
+/* unpinned narrow layout: the window grows with its stacked viewer, editor and console */
+@media (max-width:1000px){.sapp .sub{height:auto!important}.sapp .dockr,.sapp .edf,.sapp .page.on,.sapp .con{flex:none}.sapp .code{flex:none;min-height:260px}.sapp .params{min-height:120px}}
 @media (max-width:1000px){.scrolly2{height:auto}.scrolly2>.split{position:static}.steps3 li{opacity:1}}
 
 /* scroll-linked MCP conversation */
