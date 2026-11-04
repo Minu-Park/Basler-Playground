@@ -438,11 +438,11 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <section class="hero" id="views">
   <div class="wrap">
     <div class="hero-top">
-      <a class="release" id="relChip" href="https://github.com/Minu-Park/Basler-Playground/releases/latest"><b id="relVer">v0.6.4</b> Machine vision workspace <span>What's new</span></a>
+      <a class="release" id="relChip" href="https://github.com/Minu-Park/Basler-Playground/releases/latest"><b id="relVer">Latest</b> Machine vision workspace <span>What's new</span></a>
       <h1>One frame.<br><span class="a">Every way to see it.</span></h1>
       <p class="lead">Basler Playground connects Basler cameras, framegrabbers and 3D sensors in one workspace. Move freely between Range, Surface and PointCloud on the same data, tune C++ scripts on the running stream, and let an AI client work the bench over MCP.</p>
       <div class="hero-cta">
-        <a href="https://github.com/Minu-Park/Basler-Playground/releases/download/v0.6.4/BaslerPlayground-v0.6.4-Core-Windows-x64.exe" class="btn btn-primary btn-lg" data-dl="primary"><span class="ico" style="--i:url(assets/icons/downloading-updates-48.png);width:17px;height:17px"></span><span data-dl-label>Download for Windows</span></a>
+        <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" class="btn btn-primary btn-lg" data-dl="primary"><span class="ico" style="--i:url(assets/icons/downloading-updates-48.png);width:17px;height:17px"></span><span data-dl-label>Download for Windows</span></a>
         <a href="#script" class="btn btn-line btn-lg">Explore the features</a>
       </div>
     </div>
@@ -746,8 +746,8 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
     <img class="app-ico" src="assets/app_icon.png" alt="">
     <h2>Get Basler Playground</h2>
     <p>Install once. Add device plugins whenever you need them.</p>
-    <a class="btn btn-primary btn-lg" href="https://github.com/Minu-Park/Basler-Playground/releases/download/v0.6.4/BaslerPlayground-v0.6.4-Core-Windows-x64.exe" data-dl="primary"><span class="ico" style="--i:url(assets/icons/downloading-updates-48.png);width:17px;height:17px"></span><span data-dl-label>Download v0.6.4 for Windows</span></a>
-    <div class="dl-sub"><span data-dl-file>BaslerPlayground-v0.6.4-Core-Windows-x64.exe · 120 MB</span> · <a href="https://github.com/Minu-Park/Basler-Playground/releases/download/v0.6.4/BaslerPlayground-v0.6.4-Core-macOS-arm64.pkg" data-dl="alt"><span data-dl-alt>macOS (Apple silicon) installer</span></a></div>
+    <a class="btn btn-primary btn-lg" href="https://github.com/Minu-Park/Basler-Playground/releases/latest" data-dl="primary"><span class="ico" style="--i:url(assets/icons/downloading-updates-48.png);width:17px;height:17px"></span><span data-dl-label>Download for Windows</span></a>
+    <div class="dl-sub" id="dlSub" hidden><span data-dl-file></span><span id="dlAltWrap"> · <a href="#" data-dl="alt"><span data-dl-alt></span></a></span></div>
     <div class="meta"><span>Windows 10 / 11 · 64-bit</span><span>macOS · Apple silicon</span><a href="https://github.com/Minu-Park/Basler-Playground/releases">All releases &amp; SHA-256</a></div>
   </div>
 </section>
@@ -781,22 +781,24 @@ function releaseSpan(span,stage){if(span.classList.contains('done')||programmati
   if(Math.abs(dy)>1){progUntil=performance.now()+200;scrollBy({top:dy,behavior:'instant'})}}
 
 /* ================= Direct download =================
-   Release assets follow BaslerPlayground-v<ver>-Core-<OS>-<arch>.<ext>. Resolve the latest
-   release through the GitHub API so buttons download the installer instead of opening GitHub;
-   the static v0.6.4 links remain when the API is unavailable or rate-limited. */
+   No version is written into the page. Release assets follow BaslerPlayground-v<ver>-Core-<OS>-<arch>.<ext>,
+   so the latest release is resolved through the GitHub API and the buttons point at the installer asset itself.
+   Until then, or when the API is unavailable or rate-limited, they open the latest release page. */
 (async()=>{
   const isMac=/Mac/i.test(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent);
+  $$('[data-dl-label]').forEach(s=>s.textContent=`Download for ${isMac?'macOS':'Windows'}`);
   try{
     const r=await fetch('https://api.github.com/repos/Minu-Park/Basler-Playground/releases/latest',{headers:{Accept:'application/vnd.github+json'}});
     if(!r.ok)return;const rel=await r.json(),ver=rel.tag_name;
+    $('#relVer').textContent=ver;$('#relChip').href=rel.html_url;
     const win=rel.assets.find(a=>/-Core-Windows-x64\.exe$/.test(a.name)),mac=rel.assets.find(a=>/-Core-macOS-arm64\.pkg$/.test(a.name));
     const pri=isMac&&mac?mac:win,alt=pri===win?mac:win;if(!pri)return;
     const os=pri===mac?'macOS':'Windows',mb=a=>Math.round(a.size/1048576)+' MB';
     $$('[data-dl="primary"]').forEach(a=>a.href=pri.browser_download_url);
-    $('#relVer').textContent=ver;$('#relChip').href=rel.html_url;
     $$('[data-dl-label]').forEach((s,i)=>s.textContent=i===0?`Download for ${os}`:`Download ${ver} for ${os}`);
     $$('[data-dl-file]').forEach(s=>s.textContent=`${pri.name} · ${mb(pri)}`);
-    $$('[data-dl="alt"]').forEach(a=>{if(alt){a.href=alt.browser_download_url;a.querySelector('[data-dl-alt]').textContent=alt===mac?'macOS (Apple silicon) installer':'Windows installer'}else a.style.display='none'});
+    const a=$('[data-dl="alt"]');if(alt){a.href=alt.browser_download_url;a.querySelector('[data-dl-alt]').textContent=alt===mac?'macOS (Apple silicon) installer':'Windows installer'}else $('#dlAltWrap').hidden=true;
+    $('#dlSub').hidden=false;
   }catch(e){}
 })();
 
