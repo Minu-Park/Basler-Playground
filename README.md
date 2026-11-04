@@ -24,19 +24,19 @@
 
 ## Overview
 
-**Basler Playground** is a workspace for Basler vision devices. Connect Basler 2D and 3D cameras, CoaXPress framegrabbers, and LMI Gocator sensors in one application, watch the live image, and adjust a processing script while acquisition keeps running.
+**Basler Playground** is a workspace for machine vision devices. Connect Basler 2D and 3D cameras, Basler frame grabbers, LMI Gocator sensors, Heliotis heliInspect systems and GenTL devices in one application, watch the live data in 2D and 3D, and adjust a processing script while acquisition keeps running.
 
 ## What you can do
 
 | Capability | What it does |
 |------------|----------------|
-| **Session workspace** | Keep several devices, their settings, and live inspection views together. Use more than one window when the job needs it. |
-| **Script Editor** | Write a C++ script that reads the current frame and shows the processed result in the viewer. |
-| **Interactive Parameters** | Mark a variable in the script. Playground turns that mark into a control you can move while the camera stays live. |
-| **2D and 3D view** | Pan and zoom images, inspect profiles and point clouds, and place regions of interest. |
-| **Basler cameras** | Acquire from Basler GigE, USB3, and 3D cameras. |
-| **Basler framegrabbers** | Acquire CoaXPress streams from Basler framegrabbers. |
-| **LMI Gocator** | Connect Gocator 3D sensors and profilers and inspect their profiles and surfaces. |
+| **2D and 3D views** | Show the same frame as Image, Range, Surface or PointCloud from the display-mode bubble, without a conversion step. |
+| **Measure** | Right-click the view to add a Rectangle or Line, then choose Histogram, Projection or Measure. Measure rows report target, field, unit, valid samples, minimum, maximum, mean and standard deviation, and can follow each new frame. |
+| **Script Editor** | Write a C++ script that reads the current frame and shows the result in the viewer. Build, load and unload it without stopping acquisition. |
+| **Interactive Parameters** | Mark a variable in the script. The loaded build turns it into a control you can move while the camera stays live. |
+| **External libraries** | Register your own C++ libraries under **System › Libraries** with include, library and runtime DLL paths, then `#include` them in a script. |
+| **MCP connection** | Turn on **System › MCP Connection** to let a trusted AI client on the same computer open sessions, work with devices and capture snapshots. Script editing and execution need a separate approval. |
+| **Session workspace** | Keep several devices, their settings and live views together, across more than one window. |
 
 ## Interactive Parameters
 
@@ -57,12 +57,12 @@ Move the slider for `range`. The view updates from the script without starting a
 
 ## Download
 
-Install the current package from [**Releases**](https://github.com/Minu-Park/Basler-Playground/releases/latest).
+Download the installer from the [**homepage**](https://playground.minu.kr) or the [**latest release**](https://github.com/Minu-Park/Basler-Playground/releases/latest):
 
-- **Full** installs Playground together with its device packages.
-- **Core** installs Playground only. Add or update cameras, framegrabbers, and sensors later from **Device > Manage Plugins**.
+- Windows: `BaslerPlayground-v<version>-Core-Windows-x64.exe`
+- macOS: `BaslerPlayground-v<version>-Core-macOS-arm64.pkg`
 
-Further device packages are published in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins).
+Device support ships as separate plugin packages. Install, update or remove them from **System › Plugins** inside Playground. The packages are published in [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins).
 
 Each release page shows a SHA-256 digest for the installer. Compare it before you run the file:
 
@@ -76,18 +76,21 @@ Each release page shows a SHA-256 digest for the installer. Compare it before yo
 
 ## Supported devices
 
-Playground uses these Basler Korea device projects:
+Each device family is a plugin with its own version:
 
-| Device | Project |
-|--------|---------|
-| Basler 2D and 3D cameras | [BaslerKR/Camera](https://github.com/BaslerKR/Camera) |
-| Basler CoaXPress framegrabbers | [BaslerKR/Framegrabber](https://github.com/BaslerKR/Framegrabber) |
-| LMI Gocator sensors | [BaslerKR/Gocator](https://github.com/BaslerKR/Gocator) |
+| Plugin | Runtime | Devices |
+|--------|---------|---------|
+| Camera | Basler pylon | Basler 2D cameras and supported 3D cameras (GigE, USB3, blaze, Stereo ace, Stereo mini) |
+| Frame Grabber | Basler Frame Grabber SDK | Basler frame grabbers with applets and multiple DMA channels |
+| Gocator | LMI GoPxL | LMI Gocator 3D sensors and profilers |
+| Heliotis C4 | C4Utility | Heliotis heliInspect H8 systems |
+| GenICam | GenTL / GenApi | Devices exposed by GenTL producers (`.cti`) |
 
 ## Links
 
 - 🌐 **Homepage**: [playground.minu.kr](https://playground.minu.kr)
 - 📦 **Latest release**: [Download](https://github.com/Minu-Park/Basler-Playground/releases/latest)
+- 🧩 **Device plugins**: [Basler-Playground-Plugins](https://github.com/Minu-Park/Basler-Playground-Plugins/releases)
 - 🐛 **Issues**: [Report a bug](https://github.com/Minu-Park/Basler-Playground/issues)
 
 ---
