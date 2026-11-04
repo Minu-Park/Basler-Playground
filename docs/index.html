@@ -1,329 +1,1076 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Basler Playground | Unified Basler Vision Ecosystem Workspace</title>
-  <meta name="description" content="Basler Playground is the unified workspace for the entire Basler vision ecosystem. Control all Basler 2D cameras, 3D sensors, and CoaXPress framegrabbers in one suite with live Interactive Parameters.">
-  
-  <!-- Open Graph / Social Media Meta Tags -->
-  <meta property="og:title" content="Basler Playground | Unified Basler Vision Ecosystem Workspace">
-  <meta property="og:description" content="Unified workspace for the entire Basler vision portfolio featuring live JIT Interactive Parameters, multi-device 2D/3D vision, and framegrabbers.">
-  <meta property="og:type" content="website">
-  <meta property="og:image" content="https://playground.minu.kr/assets/og_icon.png">
-  <meta property="og:url" content="https://playground.minu.kr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Basler Playground</title>
+<meta name="description" content="Machine vision workspace for Basler cameras, framegrabbers and 3D sensors. Move freely between Range, Surface and PointCloud, tune C++ scripts on the live stream, and connect an AI client over MCP.">
+<link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/og_icon.png">
+<link rel="canonical" href="https://playground.minu.kr/">
+<meta name="theme-color" content="#15487f">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Basler Playground">
+<meta property="og:description" content="Machine vision workspace for Basler cameras, framegrabbers and 3D sensors.">
+<meta property="og:url" content="https://playground.minu.kr/">
+<meta property="og:image" content="https://playground.minu.kr/assets/og_icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens mirror Resources/theme (ResourcesTheme palette, metrics.json, presentation.json). */
+:root{
+  --text:#3c3c3b; --text-2:#6e6e6d; --text-3:#9b9b9a;
+  --surface:#ffffff; --workspace:#eeeeee; --page:#f7f7f6;
+  --border:#d9d9d8; --status-border:#d4d4d3; --hover-border:#8eafd1;
+  --accent:#15487f; --accent-2:#1e5ea6; --selection:#f4f7fb; --current:#eef3f9; --hover:#f4f4f3; --pressed:#eeeeed;
+  --success:#10b981; --warning:#fb8c00; --warning-text:#b45309;
+  --r-control:8px; --r-frame:10px; --r-card:14px;
+  --shadow-1:0 1px 2px rgba(60,60,59,.06);
+  --shadow-2:0 1px 2px rgba(60,60,59,.05),0 10px 30px -8px rgba(60,60,59,.14);
+  --shadow-3:0 2px 4px rgba(60,60,59,.05),0 30px 80px -20px rgba(21,72,127,.28);
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--surface);color:var(--text);font:16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+code,.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+@media (max-width:640px){.wrap{padding:0 16px}}
+.ico{display:inline-block;width:18px;height:18px;background:currentColor;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat;flex:none}
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="64x64" href="assets/favicon-64.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-  <link rel="apple-touch-icon" href="assets/og_icon.png">
+/* ---------- site chrome ---------- */
+.nav{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.86);backdrop-filter:saturate(1.4) blur(16px);border-bottom:1px solid var(--border)}
+.nav .wrap{display:flex;align-items:center;height:60px;gap:32px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand img{width:26px;height:26px}
+.nav-links{display:flex;gap:26px;font-size:14px;font-weight:500;color:var(--text-2);margin-right:auto}
+.nav-links a:hover{color:var(--accent)}
+@media (max-width:920px){.nav-links{display:none}.nav .brand{margin-right:auto}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 18px;border-radius:var(--r-control);font-weight:600;font-size:14px;white-space:nowrap;transition:background .15s,border-color .15s}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 6px 16px -6px rgba(21,72,127,.6)}
+.btn-primary:hover{background:#103a67}
+.btn-line{border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.btn-line:hover{border-color:var(--hover-border);color:var(--accent)}
+.btn-lg{height:48px;padding:0 24px;font-size:15px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 "JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.eyebrow::before{content:"";width:18px;height:1px;background:currentColor}
+h1,h2,h3{color:#2a2a29;letter-spacing:-.03em}
+.section{padding:128px 0;border-top:1px solid var(--border)}
+.section.tint{background:var(--page)}
+.sec-head{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:end;margin-bottom:56px}
+.sec-head h2{font-size:clamp(34px,4.4vw,56px);line-height:1.04;font-weight:800;margin-top:18px}
+.sec-head p{font-size:17px;color:var(--text-2);max-width:520px}
+@media (max-width:900px){.sec-head{grid-template-columns:minmax(0,1fr);gap:18px}}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+.note{margin-top:14px;font-size:12px;color:var(--text-3)}
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+/* hero */
+.hero{position:relative;padding:96px 0 120px;overflow-x:clip;background:radial-gradient(1200px 520px at 50% -120px,rgba(30,94,166,.10),transparent 70%),linear-gradient(var(--surface),var(--page))}
+.hero::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(60,60,59,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(60,60,59,.045) 1px,transparent 1px);background-size:48px 48px;-webkit-mask:radial-gradient(900px 520px at 50% 20%,#000,transparent 75%);mask:radial-gradient(900px 520px at 50% 20%,#000,transparent 75%);pointer-events:none}
+.hero .wrap{position:relative;z-index:1}
+.hero-top{text-align:center;max-width:980px;margin:0 auto}
+.release{display:inline-flex;align-items:center;gap:10px;height:32px;padding:0 6px 0 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:13px;color:var(--text-2);box-shadow:var(--shadow-1)}
+.release b{font:600 12px "JetBrains Mono";color:var(--accent)}
+.release span:last-child{background:var(--current);color:var(--accent);font-weight:600;border-radius:999px;padding:3px 10px;font-size:12px}
+.hero h1{font-size:clamp(44px,7vw,88px);line-height:.98;font-weight:800;letter-spacing:-.045em;margin:28px 0 24px}
+.hero h1 .a{color:var(--accent)}
+.hero .lead{font-size:clamp(17px,1.9vw,20px);color:var(--text-2);max-width:720px;margin:0 auto}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:36px 0 0}
+.hero-stage{margin-top:72px}
 
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
+/* =========================================================
+   App replica — measured from Design Harness captures
+   ========================================================= */
+.app{font:12.5px/1.4 Inter,system-ui,sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-frame);box-shadow:var(--shadow-3);overflow:hidden;user-select:none;text-align:left}
+.app .ico{width:16px;height:16px}
+.app .mb{display:flex;align-items:center;gap:20px;height:40px;padding:0 14px;border-bottom:1px solid var(--border);font-size:13.5px;white-space:nowrap;overflow:hidden}
+.app .mb>img{width:20px;height:20px;margin-right:8px}
+.app .mb .wb{margin-left:auto;display:flex;gap:10px}
+.app .wb .ico{width:16px;height:16px;color:var(--text)}
+.app .ws{background:var(--workspace);padding:14px}
+.app .sub{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-frame);overflow:hidden;box-shadow:0 1px 2px rgba(60,60,59,.06)}
+.app .sub>.tt{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px 0 12px;font-weight:700;font-size:12.5px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden}
+.app .sub>.tt img{width:16px;height:16px}
+.app .sub>.tt .wb{margin-left:auto;display:flex;gap:8px}
+.app .sub>.tt .wb .ico{width:15px;height:15px}
+.app .dock-t{display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 10px;font-weight:700;font-size:12.5px}
+.app .dock-t .wb{display:flex;gap:6px}.app .dock-t .wb .ico{width:14px;height:14px}
+.app .ab{display:flex;align-items:center;gap:2px;height:44px;padding:0 12px;border-bottom:1px solid var(--border)}
+.app .tbtn{width:30px;height:30px;border-radius:7px;display:inline-grid;place-items:center;color:var(--text);transition:background .12s}
+.app .tbtn .ico{width:18px;height:18px}
+.app .tbtn:hover{background:var(--hover)}
+.app .tbtn.dim{color:var(--text-2)}
+.app .tbtn.blue{color:var(--accent)}
+.app .vsep{width:1px;height:24px;background:var(--border);margin:0 6px}
+.app .bubbles{display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;border-top:1px solid var(--border);white-space:nowrap;overflow:hidden}
+.app .bub{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border:1px solid var(--border);border-radius:var(--r-control);font-size:12px;background:var(--surface)}
+.app .bub.b{font-weight:700}
+.app .bub.m{font-family:"JetBrains Mono";font-size:11.5px}
+.app .bub.mb2{font-family:"JetBrains Mono";font-size:11.5px;font-weight:700}
+.app .bub .ico{width:14px;height:14px}
+.app button.bub:hover{border-color:var(--hover-border);color:var(--hover-border)}
+.app button.bub.open{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 .5px var(--accent) inset}
+.app .bubbles .r{margin-left:auto;display:flex;gap:8px}
+.app .frame{border:1px solid var(--border);border-radius:var(--r-frame);background:var(--surface)}
+.app .field{height:24px;border:1px solid var(--border);border-radius:var(--r-control);background:var(--surface);display:flex;align-items:center;padding:0 7px;font-size:12px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.app .field.ph{color:var(--text-3)}
+.app .combo{justify-content:space-between;gap:8px;font-weight:600}
+.app .combo::after{content:"";width:10px;height:10px;flex:none;background:url(assets/icons/chevron-down-neutral.svg) center/contain no-repeat}
+.app .pbtn{height:24px;padding:0 12px;border:1px solid var(--border);border-radius:var(--r-control);background:var(--surface);font-size:12px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.app .lnk{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text)}
+.app .lnk.dis{color:var(--text-3);background:var(--hover);border-radius:6px;padding:2px 8px}
+.app .lnk .ico{width:14px;height:14px}
+.app .sw{width:36px;height:20px;background:url(assets/icons/switch-outline-off.svg) center/contain no-repeat;flex:none;cursor:pointer}
+.app .sw.on{background-image:url(assets/icons/switch-outline-on.svg)}
+.app .hint{font-size:11.5px;color:var(--text-2)}
+.app .hint b{color:var(--text);font-weight:700}
+.app .h{font-weight:700;font-size:12.5px}
+.app .status-main{display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;border-top:1px solid var(--border);background:var(--surface)}
+.app .status-main .r{margin-left:auto}
+.app .xbtn{width:14px;height:14px;color:var(--text-2)}
+.popup{position:absolute;z-index:5;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-frame);box-shadow:0 8px 24px rgba(60,60,59,.18);padding:6px 4px;min-width:150px;display:none}
+.popup.show{display:block}
+.popup button{display:flex;align-items:center;gap:12px;width:100%;height:30px;padding:0 12px;font-size:13px;color:var(--text);border-radius:6px}
+.popup button .ico{width:18px;height:18px}
+.popup button:hover,.popup button.cur{color:var(--accent);font-weight:600}
+
+/* hero app layout */
+.happ .sub{height:640px;display:flex;flex-direction:column}
+.happ .sbody{flex:1;display:grid;grid-template-columns:250px minmax(0,1fr);min-height:0}
+.happ .dock{border-right:1px solid var(--border);display:flex;flex-direction:column;min-height:0}
+.happ .dock .srctb{display:flex;gap:8px;padding:2px 12px 0}
+.happ .dock .srctb .tbtn .ico{width:19px;height:19px}
+.happ .srclist{flex:1;margin:4px 10px 10px;padding:8px 12px;overflow:hidden;border:1px solid var(--border);border-radius:var(--r-frame)}
+.app .sub>.tt>.ico{width:17px;height:17px}
+.app .sub>.tt .vm{font-weight:500;color:var(--text-2);margin-left:10px}
+.app .ab .tbtn .ico{width:19px;height:19px}
+/* scroll-linked hero: the window stays pinned while the page scrolls through the four modes */
+.scrolly{height:340vh;margin-top:64px}
+.scrolly .hero-stage{position:sticky;top:72px;margin-top:0}
+.happ .sub{height:clamp(400px,calc(100vh - 336px),640px)!important}
+@media (max-width:900px){.scrolly{height:auto}.scrolly .hero-stage{position:static}}
+/* scroll-linked Script Editor: Write → Build → Tune, then the scroll position drives level */
+.scrolly2{height:320vh}
+.scrolly2>.split{position:sticky;top:84px}
+.sapp .sub{height:clamp(460px,calc(100vh - 160px),620px)!important}
+.steps3 li{opacity:.45;transition:opacity .35s}
+.steps3 li.on{opacity:1}
+.steps3 li.on .ib{border-color:var(--hover-border);background:var(--current)}
+@media (max-width:1000px){.scrolly2{height:auto}.scrolly2>.split{position:static}.steps3 li{opacity:1}}
+
+.happ .g3{display:contents}
+.happ .vsep.g3{display:block}
+.happ.is2d .g3,.happ.is2d .vsep.g3{display:none}
+.app .g2c{display:contents}
+.happ.is3d .g2c{display:none}
+.happ.is3d .g2{display:none!important}
+.happ .srclist div{padding:6px 0;font-size:13px;font-weight:400;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.happ .srclist div:hover{font-weight:600}
+.happ .srclist div.sel{color:var(--accent);font-weight:600}
+.happ .imp{border-top:1px solid var(--border)}
+.happ .imp .rows{padding:6px 10px 10px;display:grid;gap:6px}
+.happ .imp .row{display:grid;grid-template-columns:1fr 104px;align-items:center;gap:8px;font-size:12px}
+.happ .imp .row .field{font-size:11.5px;justify-content:space-between}
+.happ .imp .row .field::after{content:"⌃⌄";font-size:7px;line-height:6px;width:6px;color:var(--text-3);white-space:normal;text-align:center}
+.happ .main{display:flex;flex-direction:column;min-width:0;position:relative}
+.happ .viewport{position:relative;flex:1;min-height:0;background:#fff}
+.happ canvas.gl{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+.happ canvas.gl:active{cursor:grabbing}
+.happ .loading{position:absolute;inset:0;display:grid;place-items:center;font:500 12px "JetBrains Mono";color:var(--text-3)}
+@media (max-width:900px){.happ .sbody{grid-template-columns:minmax(0,1fr)}.happ .dock{display:none}.app .mb .mi{display:none}}
+@media (max-width:560px){.happ .sub{height:520px}.app .ws{padding:8px}.app .bubbles .r .xy,.app .bubbles .r .fps,.app .bubbles .sz{display:none}}
+
+.rail-cap{display:flex;align-items:center;justify-content:center;gap:10px;margin:22px 0 14px;font:500 12px "JetBrains Mono";color:var(--text-2)}
+.rail-cap b{color:var(--accent);font-weight:600}
+.rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.rail button{display:grid;grid-template-columns:36px 1fr;gap:4px 12px;align-items:center;text-align:left;padding:14px 16px;border:1px solid var(--border);border-radius:var(--r-frame);background:var(--surface);transition:border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+.rail button .ib{grid-row:1/3;width:36px;height:36px;border-radius:9px;background:var(--current);display:grid;place-items:center;color:var(--accent)}
+.rail button .ib .ico{width:20px;height:20px}
+.rail button b{font-size:14.5px;font-weight:700}
+.rail button small{font-size:12.5px;color:var(--text-2);line-height:1.35}
+.rail button::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--accent)}
+.rail button.on{border-color:var(--hover-border);box-shadow:var(--shadow-2)}
+.rail button.on::after{width:100%;transition:width var(--dwell,0s) linear}
+@media (max-width:900px){.rail{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+.split{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:64px;align-items:center}
+.split.rev{grid-template-columns:minmax(0,8fr) minmax(0,4fr)}
+.split.rev .copy{order:2}
+.split.rev.wide{grid-template-columns:minmax(0,9fr) minmax(0,3fr)}
+@media (max-width:1000px){.split,.split.rev,.split.rev.wide{grid-template-columns:minmax(0,1fr);gap:40px}.split.rev .copy{order:0}}
+.points{list-style:none;display:grid;gap:22px}
+.points li{display:grid;grid-template-columns:40px 1fr;gap:14px}
+.points .ib{width:40px;height:40px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:grid;place-items:center;color:var(--accent);box-shadow:var(--shadow-1)}
+.points .ib .ico{width:20px;height:20px}
+.points b{display:block;font-size:15.5px;font-weight:700;color:#2a2a29;margin-bottom:2px}
+.points span{font-size:14.5px;color:var(--text-2)}
+.points code{font-size:13px;color:var(--accent);background:var(--current);padding:1px 6px;border-radius:5px}
+
+/* script app */
+.sapp .sub{height:620px;display:flex;flex-direction:column}
+.sapp .sbody{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 400px;min-height:0}
+.sapp .vcol{display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--border)}
+.sapp .view{position:relative;flex:1;background:#fff;overflow:hidden}
+.sapp .view canvas{position:absolute;inset:0;width:100%;height:100%}
+.sapp .dockr{display:flex;flex-direction:column;min-width:0;min-height:0;padding:0 10px 10px}
+.sapp .etb{display:flex;align-items:center;gap:2px;height:38px}
+.sapp .etb .sp{margin-left:auto}
+.sapp .edf{display:flex;flex-direction:column;flex:1;min-height:0}
+.sapp .tabs{display:flex;gap:4px;padding:0 8px;border-bottom:1px solid var(--border);height:34px;align-items:stretch}
+.sapp .tabs button{padding:0 6px;font-size:12.5px;color:var(--text-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.sapp .tabs button.on{color:var(--accent);font-weight:600;border-bottom-color:var(--accent)}
+.sapp .page{display:none;flex-direction:column;flex:1;min-height:0}
+.sapp .page.on{display:flex}
+.sapp .doc{display:flex;align-items:center;gap:2px;padding:6px 6px 6px 8px}
+.sapp .doc .combo{width:140px;font-weight:600}
+.sapp .doc .sp{margin-left:auto}
+.sapp .doc .tbtn{width:26px;height:26px}.sapp .doc .tbtn .ico{width:16px;height:16px}
+.code{font:12px/1.7 "JetBrains Mono",monospace;flex:1;overflow:hidden;background:var(--surface);border-top:1px solid var(--border);position:relative;padding:2px 0}
+.code::before{content:"";position:absolute;left:32px;top:0;bottom:0;width:1px;background:#ececeb}
+.code div{white-space:pre;padding:0 10px 0 42px;position:relative}
+.code div::before{content:attr(data-n);position:absolute;left:4px;width:22px;text-align:right;color:#9b9b9a}
+.code .cur::before{color:var(--text);font-weight:700}
+.code .bi{background:#eef4fb}.code .br{background:#f4f1fb}
+.code .hl{background:rgba(251,140,0,.09)}
+.k{color:#1f2a44;font-weight:700}.f{color:#d81b60;font-weight:700}.fm{color:#1f2a44;font-weight:700}.n{color:#c25e00}.c{color:#8f8f8e}.t{color:#1f2a44;font-weight:700}.s{color:#2e7d32}.p{color:#6a3fb5;font-weight:700}.ai{color:#1e5ea6;font-weight:700}.ar{color:#7b3fb3;font-weight:700}
+.sapp .est{display:flex;gap:12px;font:600 10.5px "JetBrains Mono";padding:6px 8px;border-top:1px solid var(--border);color:var(--text)}
+.sapp .est .r{margin-left:auto}
+.sapp .params{padding:12px 10px;display:grid;gap:10px;align-content:start}
+.sapp .prow{display:grid;grid-template-columns:70px 120px 1fr;gap:10px;align-items:center}
+.sapp .spin{height:24px;border:1px solid var(--border);border-radius:var(--r-control);display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 8px;font-size:12px}
+.sapp .spin input{border:0;outline:0;width:60px;font:12px Inter;color:var(--text);background:none}
+.sapp .spin i{font-style:normal;font-size:7px;line-height:6px;color:var(--text-3);text-align:center}
+.rng{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer}
+.rng::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--accent),var(--accent)) 0/var(--p,50%) 100% no-repeat,#e3e3e2}
+.rng::-moz-range-track{height:4px;border-radius:2px;background:#e3e3e2}
+.rng::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#fff;border:1px solid #c6c6c5;margin-top:-4px;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.rng::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#fff;border:1px solid #c6c6c5}
+.sapp .con{margin-top:8px;height:150px;display:flex;flex-direction:column;overflow:hidden}
+.sapp .con .hd{display:flex;align-items:center;height:30px;padding:0 10px 0 14px;background:var(--hover);border-bottom:1px solid var(--border);font-weight:700;font-size:12px}
+.sapp .con .hd span{margin-left:auto;margin-right:16px;font-weight:600;color:var(--text-2)}
+.sapp .con .bd{font:11px/1.6 "JetBrains Mono";padding:6px 10px;color:var(--text)}
+.sapp .con .bd .ok{color:#0b7a57}
+@media (max-width:900px){.sapp .sub{height:auto}.sapp .sbody{grid-template-columns:minmax(0,1fr)}.sapp .vcol{border-right:0;border-bottom:1px solid var(--border)}.sapp .view{height:300px;flex:none}.sapp .code{min-height:220px}}
+
+/* measure app */
+.app .tbtn.on{background:var(--pressed)}
+.meapp .sub{display:flex;flex-direction:column}
+.mview{position:relative;height:400px;background:#fff;overflow:hidden;cursor:crosshair;touch-action:none}
+.mview canvas{position:absolute;inset:0;width:100%;height:100%}
+#rois{position:absolute;inset:0;pointer-events:none}
+.roi{position:absolute;border:2px solid rgb(0,111,191);box-shadow:0 0 0 1.5px #fff,inset 0 0 0 1.5px #fff}
+.roi.hov{border-color:rgb(255,140,0)}
+.roi .lb,.lroi .lb{position:absolute;left:-2px;top:-22px;font:700 12px Inter;color:var(--text);background:rgba(255,255,255,.86);padding:1px 4px;border-radius:3px;white-space:nowrap}
+.roi .hd{position:absolute;width:7px;height:7px;background:rgb(0,111,191);border:1.5px solid #fff}
+#rois svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.lroi{position:absolute}
+.mhint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font:500 11.5px "JetBrains Mono";color:var(--text-2);background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:var(--r-control);padding:4px 10px;white-space:nowrap;pointer-events:none;transition:opacity .4s}
+#ctx{min-width:170px}
+#ctx button{height:28px;font-size:12.5px}
+#ctx hr{border:0;border-top:1px solid var(--border);margin:4px 8px}
+.apanel{border-top:1px solid var(--border)}
+.apage{padding:8px 12px 12px!important}
+.atabs{display:flex;gap:6px;padding:0 12px;height:34px;align-items:stretch;border-bottom:1px solid var(--border)}
+.atabs button{padding:0 6px;font-size:12.5px;color:var(--text-2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.atabs button.on{color:var(--accent);font-weight:600;border-bottom-color:var(--accent)}
+.apage{height:220px;padding:8px 0 0;overflow:auto}
+.mtab{border:1px solid var(--border);border-radius:var(--r-frame);overflow:hidden;min-width:880px}
+.mtab table{width:100%;border-collapse:collapse;font-size:12px}
+.mtab th{font-weight:700;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);border-right:1px solid #ececeb;white-space:nowrap}
+.mtab th:last-child{border-right:0}
+.mtab td{padding:4px 8px;white-space:nowrap;height:26px}
+.mtab td.nr,.mtab th.nr{text-align:right;font-variant-numeric:tabular-nums}
+.mtab tr.sel td{background:var(--selection)}
+.mtab tr.sel td:first-child{border-radius:8px 0 0 8px}.mtab tr.sel td:last-child{border-radius:0 8px 8px 0}
+.mtab .sw{display:block}
+.mtab .empty{color:var(--text-3);padding:14px}
+.aplot{position:relative;height:210px;border:1px solid var(--border);border-radius:var(--r-frame)}
+.aplot canvas{position:absolute;inset:0;width:100%;height:100%}
+.mpoints{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:24px}
+.mpoints div{display:grid;grid-template-columns:40px 1fr;gap:2px 14px;padding:20px;border:1px solid var(--border);border-radius:var(--r-card);background:var(--surface)}
+.mpoints .ib{grid-row:1/3;width:40px;height:40px;border-radius:10px;background:var(--current);display:grid;place-items:center;color:var(--accent)}
+.mpoints .ib .ico{width:20px;height:20px}
+.mpoints b{font-size:15px;color:#2a2a29}
+.mpoints span:not(.ib):not(.ico){font-size:14px;color:var(--text-2)}
+@media (max-width:900px){.mpoints{grid-template-columns:minmax(0,1fr)}.mview{height:300px}}
+
+/* dialogs */
+.dlg .tt{display:flex;align-items:center;justify-content:space-between;height:32px;padding:0 8px 0 12px;font-weight:700;font-size:12px;border-bottom:1px solid var(--border)}
+.dlg .tt .ico{width:15px;height:15px}
+.lapp .body{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;padding:14px;min-height:400px}
+.lapp .lcol{display:flex;flex-direction:column;gap:12px}
+.lapp .lst{flex:1;display:flex;flex-direction:column;padding:6px 0}
+.lapp .lst .it{padding:5px 12px;cursor:pointer;font-weight:500}
+.lapp .lst .it.sel{color:var(--accent);font-weight:700}
+.lapp .lst .ft{margin-top:auto;display:flex;align-items:center;gap:2px;padding:6px 6px 0;border-top:1px solid var(--border)}
+.lapp .lst .ft .tbtn{width:24px;height:24px}.lapp .lst .ft .ico{width:15px;height:15px}
+.lapp .lst .ft .sp{margin-left:auto}
+.lapp .form{display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:8px 10px;align-items:center;align-content:start}
+.lapp .form .lab{font-size:12.5px}
+.lapp .form .hint{grid-column:2/4;margin:-2px 0 6px}
+.lapp .form .full{grid-column:2/4}
+@media (max-width:640px){.lapp .body{grid-template-columns:minmax(0,1fr)}.lapp .lst{min-height:120px}.lapp .form{grid-template-columns:minmax(0,1fr) auto}.lapp .form .lab{grid-column:1/3}.lapp .form .hint,.lapp .form .full{grid-column:1/3}}
+.stack{display:grid;gap:16px}
+
+.mgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.mgrid{grid-template-columns:minmax(0,1fr)}}
+.mapp .body{padding:16px 16px 18px;display:grid;gap:4px}
+.mapp .sec{display:grid;grid-template-columns:1fr auto;align-items:start;gap:4px 16px}
+.mapp .sec .h{font-size:13px}
+.mapp .sec>:not(.sw){grid-column:1}.mapp .sec>.sw{grid-column:2;grid-row:1}
+.mapp .gap{height:14px}
+.mapp .addr{display:flex;gap:8px;align-items:center}
+.mapp .addr .field{flex:1;font-size:12px}
+.mapp .warnx{font-size:11.5px;font-weight:700;color:var(--text);display:none;margin-top:4px}
+.mapp.scripts .warnx{display:block}
+.mapp .det{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px}
+.mapp .det .ico{width:12px;height:12px;transform:rotate(-90deg)}
+.chat{border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:var(--shadow-2);overflow:hidden}
+.chat .hd{display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:600}
+.chat .hd small{margin-left:auto;font:500 11px "JetBrains Mono";color:var(--text-3)}
+.chat .bd{padding:18px;display:grid;gap:12px;font-size:14px}
+.chat .u{justify-self:end;max-width:84%;background:var(--accent);color:#fff;padding:10px 14px;border-radius:14px 14px 4px 14px}
+.chat .tool{border:1px solid var(--border);border-radius:var(--r-frame);background:var(--page);font:11.5px/1.7 "JetBrains Mono";color:var(--text-2);overflow:hidden}
+.chat .tool div{padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat .tool div:first-child{border-top:0}
+.chat .tool b{color:var(--accent);font-weight:600}
+.chat .tool i{font-style:normal;color:#0b7a57;margin-left:auto}
+.chat .a{max-width:92%;background:var(--page);border:1px solid var(--border);padding:10px 14px;border-radius:14px 14px 14px 4px}
+.chat .typing{opacity:0;transform:translateY(6px);transition:all .45s}
+.chat .typing.in{opacity:1;transform:none}
+
+.papp .top{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.papp .top .combo{width:96px;font-weight:500}
+.papp .top .tbtn{width:26px;height:26px}
+.papp .panes{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);gap:6px;padding:0 10px 12px;min-height:300px}
+.papp .plist{padding:6px 0}
+.papp .pit{display:grid;grid-template-columns:20px 1fr;gap:2px 8px;padding:7px 12px;cursor:pointer}
+.papp .pit .ico{width:17px;height:17px;color:var(--accent);margin-top:2px;grid-row:1/3}
+.papp .pit b{font-weight:700;font-size:12.5px}
+.papp .pit.sel b{color:var(--accent)}
+.papp .pit small{font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:4px}
+.papp .pit small .ico{width:12px;height:12px;color:var(--text-2);margin:0}
+.papp .det{padding:14px 12px;display:grid;gap:8px;align-content:start}
+.papp .det .hd{display:flex;gap:12px;align-items:center}
+.papp .det .hd .ico{width:30px;height:30px;color:var(--accent)}
+.papp .det .hd b{display:block;font-size:12.5px}
+.papp .det .hd small{font-size:11.5px;color:var(--text-2)}
+.papp .det .st{font-weight:700;color:var(--text-2);font-size:12px}
+.papp .det .ver{display:flex;align-items:center;gap:8px}
+.papp .det .ver .combo{flex:1;font-weight:500}
+@media (max-width:640px){.papp .panes{grid-template-columns:minmax(0,1fr)}}
+
+.dgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;margin-top:20px}
+.dc{position:relative;border:1px solid var(--border);border-radius:var(--r-card);background:var(--surface);overflow:hidden;display:flex;flex-direction:column;transition:border-color .2s,box-shadow .2s}
+.dc:hover{border-color:var(--hover-border);box-shadow:var(--shadow-2)}
+.dc .ph{background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;border-bottom:1px solid var(--border)}
+.dc .ph img{width:100%;height:100%;object-fit:contain;padding:22px}
+.dc .lineup{display:flex;align-items:center;justify-content:center;gap:5%;padding:24px}
+.dc .lineup figure{display:flex;flex-direction:column;align-items:center;gap:16px;min-width:0;flex:0 1 auto!important}
+.dc .lineup img{height:136px;width:auto;max-width:100%;object-fit:contain;padding:0}
+@media (max-width:760px){.dc .lineup img{height:84px}.dc .lineup{gap:3%;padding:16px}}
+.dc .lineup figcaption{font:600 11px "JetBrains Mono";color:var(--text-3);white-space:nowrap}
+.dc .tx{padding:20px 22px 22px}
+.dc .hd{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.dc .hd .ico{color:var(--accent);width:20px;height:20px}
+.dc h3{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.dc .tag{margin-left:auto;font:500 11px "JetBrains Mono";color:var(--text-3)}
+.dc p{font-size:14px;color:var(--text-2)}
+.dc.cam{grid-column:span 4}.dc.cam .ph{height:250px}
+.dc.fg{grid-column:span 2}.dc.fg .ph{height:250px}
+.dc.sm{grid-column:span 2}
+.dc .glyph{height:220px;display:grid;place-items:center;background:#fff;border-bottom:1px solid var(--border)}
+.dc.sm .ph{height:220px}
+.dc.sm .ph img{padding:20px}
+.dc .glyph .ico{width:52px;height:52px;color:var(--accent)}
+@media (max-width:1000px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.dc.cam,.dc.fg,.dc.sm{grid-column:span 2}}
+@media (min-width:640px) and (max-width:1000px){.dc.sm{grid-column:span 1}}
+
+
+.dl{padding:128px 0;text-align:center;border-top:1px solid var(--border);background:radial-gradient(800px 400px at 50% 0,rgba(30,94,166,.09),transparent 70%),var(--surface)}
+.dl img.app-ico{width:88px;height:88px;filter:drop-shadow(0 14px 24px rgba(21,72,127,.25))}
+.dl h2{font-size:clamp(36px,5vw,60px);font-weight:800;line-height:1.02;margin:28px 0 14px}
+.dl p{font-size:18px;color:var(--text-2)}
+.dl .btn{margin-top:36px}
+.dl-sub{margin-top:14px;font:500 12.5px "JetBrains Mono";color:var(--text-3)}
+.dl-sub a{color:var(--accent);font-family:Inter;font-weight:600}
+.dl .meta{margin-top:20px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px 28px;font-size:13.5px;color:var(--text-3)}
+.dl .meta a{color:var(--accent);font-weight:600}
+footer{border-top:1px solid var(--border);padding:36px 0 44px;font-size:13px;color:var(--text-3);background:var(--page)}
+footer .top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:center;margin-bottom:18px}
+footer .links{display:flex;gap:22px;margin-left:auto;flex-wrap:wrap}
+footer .links a:hover{color:var(--accent)}
+footer .cr{font-size:12px;line-height:1.6;max-width:880px}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js"}}</script>
 </head>
 <body>
 
-  <!-- Header / Navigation -->
-  <header class="site-header">
-    <div class="container">
-      <div class="nav-wrapper">
-        <a href="#" class="brand-logo">
-          <img src="assets/app_icon.png" alt="Playground Icon" class="brand-logo-img">
-          <span class="brand-text">Playground</span>
-        </a>
+<header class="nav">
+  <div class="wrap">
+    <a href="#" class="brand"><img src="assets/app_icon.png" alt="">Basler Playground</a>
+    <nav class="nav-links"><a href="#views">2D ⇄ 3D</a><a href="#measure">Measure</a><a href="#script">Script Editor</a><a href="#libraries">Libraries</a><a href="#mcp">MCP</a><a href="#devices">Devices</a></nav>
+    <a href="#download" class="btn btn-primary">Download</a>
+  </div>
+</header>
 
-        <ul class="nav-links">
-          <li><a href="#features">Features</a></li>
-          <li><a href="#interactive-highlight">Interactive Parameters</a></li>
+<main>
+<section class="hero" id="views">
+  <div class="wrap">
+    <div class="hero-top">
+      <span class="release"><b>v0.6.4</b> Machine vision workspace <span>What's new</span></span>
+      <h1>One frame.<br><span class="a">Every way to see it.</span></h1>
+      <p class="lead">Basler Playground connects Basler cameras, framegrabbers and 3D sensors in one workspace. Move freely between Range, Surface and PointCloud on the same data, tune C++ scripts on the running stream, and let an AI client work the bench over MCP.</p>
+      <div class="hero-cta">
+        <a href="https://github.com/Minu-Park/Basler-Playground/releases/download/v0.6.4/BaslerPlayground-v0.6.4-Core-Windows-x64.exe" class="btn btn-primary btn-lg" data-dl="primary"><span class="ico" style="--i:url(assets/icons/downloading-updates-48.png);width:17px;height:17px"></span><span data-dl-label>Download for Windows</span></a>
+        <a href="#script" class="btn btn-line btn-lg">Explore the features</a>
+      </div>
+    </div>
+
+    <div class="scrolly" id="scrolly"><div class="hero-stage reveal">
+      <div class="app happ">
+        <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+        <div class="ws">
+          <div class="sub">
+            <div class="tt"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span><span id="subTitle">bin-sprockets.ply</span><span class="vm">View</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+            <div class="sbody">
+              <aside class="dock">
+                <div class="dock-t">3D Data Controls<span class="wb"><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+                <div class="srctb"><button class="tbtn" aria-label="Previous"><span class="ico" style="--i:url(assets/icons/back-48.png)"></span></button><button class="tbtn" aria-label="Pause"><span class="ico" style="--i:url(assets/icons/pause-48.png)"></span></button><button class="tbtn" aria-label="Next"><span class="ico" style="--i:url(assets/icons/forward-48.png)"></span></button><button class="tbtn" aria-label="Add"><span class="ico" style="--i:url(assets/icons/add-image-48.png)"></span></button><button class="tbtn" aria-label="Remove"><span class="ico" style="--i:url(assets/icons/empty-trash-48.png)"></span></button></div>
+                <div class="srclist" id="scenes">
+                  <div class="sel" data-s="F">[Ready] bin-sprockets.ply</div>
+                  <div data-s="C">[Ready] bin-pins.ply</div>
+                  <div data-s="B">[Ready] bin-hex-nuts.ply</div>
+                </div>
+              </aside>
+              <div class="main">
+                <div class="ab" id="hTb">
+                  <button class="tbtn" aria-label="Open"><span class="ico" style="--i:url(assets/icons/image-48.png)"></span></button>
+                  <button class="tbtn" aria-label="Save"><span class="ico" style="--i:url(assets/icons/save-48.png)"></span></button>
+                  <span class="vsep"></span>
+                  <span class="g2c"><button class="tbtn" aria-label="Zoom in"><span class="ico" style="--i:url(assets/icons/zoomIn-48.png)"></span></button><button class="tbtn" aria-label="Zoom out"><span class="ico" style="--i:url(assets/icons/zoomOut-48.png)"></span></button><button class="tbtn" aria-label="Original size"><span class="ico" style="--i:url(assets/icons/original-size-48.png)"></span></button><button class="tbtn on" aria-label="Fit"><span class="ico" style="--i:url(assets/icons/fit-on-48.png)"></span></button><span class="vsep"></span></span>
+                  <span class="g3"><button class="tbtn" aria-label="Zoom in"><span class="ico" style="--i:url(assets/icons/zoomIn-48.png)"></span></button><button class="tbtn" aria-label="Zoom out"><span class="ico" style="--i:url(assets/icons/zoomOut-48.png)"></span></button><button class="tbtn" id="resetBtn" aria-label="Reset view"><span class="ico" style="--i:url(assets/icons/reset-48.png)"></span></button></span>
+                  <span class="vsep g3"></span>
+                  <span class="g3"><button class="tbtn" data-rot="l" aria-label="Rotate left"><span class="ico" style="--i:url(assets/icons/back-48.png)"></span></button><button class="tbtn" data-rot="r" aria-label="Rotate right"><span class="ico" style="--i:url(assets/icons/forward-48.png)"></span></button><button class="tbtn" data-rot="u" aria-label="Rotate up"><span class="ico" style="--i:url(assets/icons/collapse-arrow-48.png)"></span></button><button class="tbtn" data-rot="d" aria-label="Rotate down"><span class="ico" style="--i:url(assets/icons/drop-down-arrow-48.png)"></span></button></span>
+                  <span class="vsep g3"></span>
+                  <button class="tbtn dim" aria-label="Analysis"><span class="ico" style="--i:url(assets/icons/info-48.png)"></span></button>
+                  <button class="tbtn" aria-label="Settings"><span class="ico" style="--i:url(assets/icons/setting-48.png)"></span></button>
+                </div>
+                <div class="viewport" id="vp"><canvas class="gl" id="gl"></canvas><div class="loading" id="loading">Loading scan…</div></div>
+                <div class="bubbles">
+                  <button class="bub b" id="modeBub"><span class="ico" id="modeIco" style="--i:url(assets/icons/image-view-48.png)"></span><span id="modeLbl">Image</span></button>
+                  <span class="bub b g2" id="colBub">RGB</span>
+                  <span class="bub sz" id="szBub">480 × 400 / bin-sprockets.ply</span>
+                  <span class="r g2"><span class="bub m xy" id="xyBub">X 240&nbsp;&nbsp;Y 200</span><span class="bub m fps">30.0 FPS</span><span class="bub mb2">100%</span></span>
+                </div>
+                <div class="popup" id="modeMenu">
+                  <button data-m="image"><span class="ico" style="--i:url(assets/icons/image-view-48.png)"></span>Image</button>
+                  <button data-m="range"><span class="ico" style="--i:url(assets/icons/depth-48.png)"></span>Range</button>
+                  <button data-m="surface"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span>Surface</button>
+                  <button data-m="points"><span class="ico" style="--i:url(assets/icons/map-grid-48.png)"></span>PointCloud</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="status-main"><span class="bub b">System Logs</span><span class="bub b"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span><span id="tabTitle">bin-sprockets.ply</span><span class="ico xbtn" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+      </div>
+      <div class="rail-cap">one organized scan · <b>four display modes</b> · no conversion step</div>
+      <div class="rail" id="rail">
+        <button data-m="image"><span class="ib"><span class="ico" style="--i:url(assets/icons/image-view-48.png)"></span></span><b>Image</b><small>The intensity frame from the sensor.</small></button>
+        <button data-m="range"><span class="ib"><span class="ico" style="--i:url(assets/icons/depth-48.png)"></span></span><b>Range</b><small>Every pixel colored by its height.</small></button>
+        <button data-m="surface"><span class="ib"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span></span><b>Surface</b><small>The same pixels lifted into a lit mesh.</small></button>
+        <button data-m="points"><span class="ib"><span class="ico" style="--i:url(assets/icons/map-grid-48.png)"></span></span><b>PointCloud</b><small>Measured XYZ points, free to orbit.</small></button>
+      </div>
+    </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- MEASURE -->
+<section class="section tint" id="measure">
+  <div class="wrap">
+    <div class="sec-head reveal"><div><div class="eyebrow">Analysis · Measure</div><h2>Draw a region.<br>Read the numbers.</h2></div><p>Right-click the view, add a Rectangle or Line, and choose Measure. Each row keeps its target, field, unit and valid sample count — switch Live on and it follows every new frame.</p></div>
+    <div class="app meapp reveal">
+      <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+      <div class="ws">
+        <div class="sub">
+          <div class="tt"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span>bin-sprockets.ply<span class="vm">View</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+          <div class="ab">
+            <button class="tbtn" aria-label="Open"><span class="ico" style="--i:url(assets/icons/image-48.png)"></span></button>
+            <button class="tbtn" aria-label="Save"><span class="ico" style="--i:url(assets/icons/save-48.png)"></span></button>
+            <span class="vsep"></span><span class="g2c"><button class="tbtn" aria-label="Zoom in"><span class="ico" style="--i:url(assets/icons/zoomIn-48.png)"></span></button><button class="tbtn" aria-label="Zoom out"><span class="ico" style="--i:url(assets/icons/zoomOut-48.png)"></span></button><button class="tbtn" aria-label="Original size"><span class="ico" style="--i:url(assets/icons/original-size-48.png)"></span></button><button class="tbtn on" aria-label="Fit"><span class="ico" style="--i:url(assets/icons/fit-on-48.png)"></span></button></span><span class="vsep"></span>
+            <button class="tbtn on" aria-label="Analysis"><span class="ico" style="--i:url(assets/icons/info-48.png)"></span></button>
+            <button class="tbtn" aria-label="Settings"><span class="ico" style="--i:url(assets/icons/setting-48.png)"></span></button>
+          </div>
+          <div class="mview" id="mview"><canvas id="mcv"></canvas><div id="rois"></div><div class="mhint" id="mhint">Drag to add a Rectangle · right-click for the analysis menu</div>
+            <div class="popup" id="ctx">
+              <button data-a="line">Line</button><button data-a="rect">Rectangle</button><hr>
+              <button data-a="hist">Histogram</button><button data-a="proj">Projection</button><button data-a="measure">Measure</button>
+              <hr data-g="del"><button data-a="delete" data-g="del">Delete</button>
+              <hr data-g="clr"><button data-a="clear" data-g="clr">Clear ROIs</button><button data-a="clearres">Clear Results</button>
+            </div>
+          </div>
+          <div class="bubbles"><span class="bub b"><span class="ico" style="--i:url(assets/icons/depth-48.png)"></span>Range</span><span class="bub b">Rainbow</span><span class="bub sz">480 × 400 / bin-sprockets.ply</span><span class="r"><span class="bub m xy" id="mxy">X 240&nbsp;&nbsp;Y 200</span><span class="bub m fps">30.0 FPS</span><span class="bub mb2">100%</span></span></div>
+          <div class="apanel">
+            <div class="atabs" id="atabs"></div>
+            <div class="apage" id="apage"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mpoints">
+      <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/cursor-48.png)"></span></span><b>Rectangle and Line ROIs</b><span>Regions are named R1, R2… and lines L1, L2…, and stay on the view across frames.</span></div>
+      <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/health-data-48.png)"></span></span><b>Histogram, Projection, Measure</b><span>One menu for every analysis; each request opens its own result tab.</span></div>
+      <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/depth-48.png)"></span></span><b>Real units, real samples</b><span>Range values are measured in mm from the source frame, with invalid points counted out.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SCRIPT -->
+<section class="section" id="script">
+  <div class="wrap">
+    <div class="sec-head reveal"><div><div class="eyebrow">Script Editor</div><h2>C++ on the live frame.<br>Tuned with a slider.</h2></div><p>Write a script against the current frame and build it. Mark a variable with <code>@interactive</code> and the loaded build adds it to Interactive Parameters — move it while the camera keeps grabbing.</p></div>
+    <div class="scrolly2" id="scrolly2"><div class="split rev wide">
+      <div class="copy reveal">
+        <ul class="points steps3" id="ssteps">
+          <li class="on"><span class="ib"><span class="ico" style="--i:url(assets/icons/ai-generated-text-48.png)"></span></span><div><b>Write</b><span>Native C++ with clangd. Use <code>get()</code> for the frame and <code>show()</code> for the result.</span></div></li>
+          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/plug-connected-48.png)"></span></span><div><b>Build &amp; load</b><span>The script compiles to a native library and swaps into the pipeline without stopping acquisition.</span></div></li>
+          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/setting-48.png)"></span></span><div><b>Tune</b><span><code>level</code> appears under Interactive Parameters. Keep scrolling — or drag it yourself.</span></div></li>
         </ul>
-
-        <div class="header-cta">
-          <a href="https://github.com/Minu-Park/Basler-Playground" target="_blank" rel="noopener" class="btn btn-secondary">
-            <svg class="btn-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            GitHub
-          </a>
-          <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" target="_blank" rel="noopener" class="btn btn-primary">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download Latest
-          </a>
-        </div>
       </div>
-    </div>
-  </header>
-
-  <!-- Main Content -->
-  <main>
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <div class="container">
-
-        <h1 class="hero-title">
-          Unified Workspace for the Entire<br>
-          Basler Vision Ecosystem
-        </h1>
-
-        <!-- Restored Bubble Pill Badge directly tied to title -->
-        <div class="hero-provided-by">
-          <span class="provided-by-badge">Provided by Basler Korea</span>
-        </div>
-
-        <p class="hero-subtitle">
-          Control every Basler 2D camera, 3D sensor, and CoaXPress framegrabber in a single unified suite. Featuring <b>Interactive Parameters</b> for live JIT algorithm hot-swapping without stopping your acquisition pipeline.
-        </p>
-
-        <div class="hero-actions">
-          <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" target="_blank" rel="noopener" class="btn btn-primary btn-lg hero-desktop-only">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download Latest Release
-          </a>
-          <a href="https://github.com/Minu-Park/Basler-Playground" target="_blank" rel="noopener" class="btn btn-primary btn-lg hero-mobile-only">
-            <svg class="btn-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            View on GitHub
-          </a>
-        </div>
-
-        <!-- Real Screenshot Showcase Window -->
-        <div class="screenshot-showcase-window">
-          <img src="assets/app_screenshot.png" alt="Basler Playground Application UI" class="app-screenshot-bg">
-          
-          <!-- Live Binarized Camera Frame Overlay -->
-          <div class="overlay-viewport-container">
-            <canvas id="heroCanvas" class="overlay-live-canvas"></canvas>
-          </div>
-
-          <!-- Interactive Parameter Controls Overlay with Animated Pulse Highlight Badge -->
-          <div class="overlay-params-container pulse-highlight-box">
-            <div class="overlay-param-tooltip">⚡ Drag Interactive Parameter</div>
-            <div class="overlay-param-box">
-              <span class="param-name">range</span>
-              <input type="number" id="heroParamInput" value="127" min="1" max="255" class="overlay-num-input">
-              <input type="range" id="heroParamSlider" value="127" min="1" max="255" class="overlay-slider pulsing-slider">
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- SECTION 1: Features Section -->
-    <section id="features" class="section">
-      <div class="container">
-        <div class="section-title-wrapper">
-          <div class="section-tag">Core Capabilities</div>
-          <h2 class="section-title">Built for High-Speed Vision & Industrial Automation</h2>
-          <p class="section-desc">Modular architecture ensuring strict boundary isolation, zero-copy buffer handoffs, and instant JIT parameter hot-swapping.</p>
-        </div>
-
-        <div class="features-grid">
-          <!-- Card 1 -->
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-            </div>
-            <h3>Session Workspace Architecture</h3>
-            <p>Unified multi-device authority and multi-window workspace for managing active camera streams, parameters, and live inspection pipelines.</p>
-          </div>
-
-          <!-- Card 2 -->
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            </div>
-            <h3>High-Performance 2D & 3D Engine</h3>
-            <p>High-speed visualization engine for 2D image pan/zoom, 3D point cloud surfaces, profile measurements, and ROI tools.</p>
-          </div>
-
-          <!-- Card 3 -->
-          <div class="feature-card highlight-card">
-            <div class="feature-icon-wrapper highlight">
-              ⚡
-            </div>
-            <h3>Interactive Parameters & JIT Hot-Swapping</h3>
-            <p>Write processing scripts directly in Script Editor. Simple <code>// @interactive</code> annotations automatically construct live GUI sliders instantly.</p>
-          </div>
-
-          <!-- Card 4 (Basler Camera) -->
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <img src="assets/basler.png" alt="Basler Camera Icon" style="width: 28px; height: 28px;">
-            </div>
-            <h3>Basler 2D & 3D Cameras</h3>
-            <p>Complete acquisition for Basler GigE, USB3, and 3D vision cameras with status contracts: <i>Idle</i>, <i>Disconnected</i>, <i>Connected</i>, and <i>Live Grabbing</i>.</p>
-          </div>
-
-          <!-- Card 5 (Basler Framegrabber) -->
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <img src="assets/basler.png" alt="Basler Framegrabber Icon" style="width: 28px; height: 28px;">
-            </div>
-            <h3>Basler Framegrabber (CoaXPress)</h3>
-            <p>Hardware abstraction for Basler CoaXPress framegrabbers supporting multi-stream DMA ring buffers and microsecond timestamping.</p>
-          </div>
-
-          <!-- Card 6 (LMI GoPxL 3D - End of List) -->
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <img src="assets/lmi.png" alt="LMI Gocator Icon" style="width: 28px; height: 28px;">
-            </div>
-            <h3>LMI 3D Sensors (GoPxL SDK)</h3>
-            <p>Full support for all LMI Gocator 3D sensors and profilers powered by GoPxL SDK for dynamic 3D profile parameter edits and surface point cloud extraction.</p>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- SECTION 2: HIGHLIGHTED FEATURE SECTION - INTERACTIVE PARAMETERS DEMO -->
-    <section id="interactive-highlight" class="section section-highlight">
-      <div class="container">
-        <div class="section-title-wrapper">
-          <div class="section-tag-badge">CORE FEATURE SHOWCASE</div>
-          <h2 class="section-title">Auto-Generated JIT Interactive Parameters</h2>
-          <p class="section-desc">Add simple <code>// @interactive</code> annotations in code to construct live GUI parameter controls instantly without restarting image acquisition.</p>
-        </div>
-
-        <div class="interactive-demo-container">
-          <div class="interactive-demo-sidebar">
-            <h3>How It Works</h3>
-            <ol class="steps-list">
-              <li class="active">
-                <span class="step-num">1</span>
-                <div>
-                  <strong>Annotate Script Code</strong>
-                  <p>Add <code>// @interactive-range(min, max)</code> next to any variable in Script Editor.</p>
+      <div class="app sapp reveal">
+        <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+        <div class="ws">
+          <div class="sub">
+            <div class="tt"><span class="ico" style="--i:url(assets/icons/camera-48.png);color:var(--accent)"></span>Basler acA2440-20gm (24811503)<span class="vm">View</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+            <div class="sbody">
+              <div class="vcol">
+                <div class="ab">
+                  <button class="tbtn" aria-label="Open"><span class="ico" style="--i:url(assets/icons/image-48.png)"></span></button>
+                  <button class="tbtn" aria-label="Save"><span class="ico" style="--i:url(assets/icons/save-48.png)"></span></button>
+                  <span class="vsep"></span><span class="g2c"><button class="tbtn" aria-label="Zoom in"><span class="ico" style="--i:url(assets/icons/zoomIn-48.png)"></span></button><button class="tbtn" aria-label="Zoom out"><span class="ico" style="--i:url(assets/icons/zoomOut-48.png)"></span></button><button class="tbtn" aria-label="Original size"><span class="ico" style="--i:url(assets/icons/original-size-48.png)"></span></button><button class="tbtn on" aria-label="Fit"><span class="ico" style="--i:url(assets/icons/fit-on-48.png)"></span></button></span><span class="vsep"></span>
+                  <button class="tbtn dim" aria-label="Analysis"><span class="ico" style="--i:url(assets/icons/info-48.png)"></span></button>
+                  <button class="tbtn" aria-label="Settings"><span class="ico" style="--i:url(assets/icons/setting-48.png)"></span></button>
                 </div>
-              </li>
-              <li>
-                <span class="step-num">2</span>
-                <div>
-                  <strong>Auto-Generated GUI Controls</strong>
-                  <p>Basler Playground parses annotations and constructs real-time parameter sliders.</p>
-                </div>
-              </li>
-              <li>
-                <span class="step-num">3</span>
-                <div>
-                  <strong>Zero-Latency Pipeline Update</strong>
-                  <p>Drag sliders to tune thresholding, edges, or gain dynamically without dropping frames.</p>
-                </div>
-              </li>
-            </ol>
-          </div>
-
-          <div class="interactive-demo-preview">
-            <div class="demo-toolbar">
-              <span>Live Interactive Parameter Hot-Swapping</span>
-              <span class="latency-badge">Latency: 0.2ms</span>
-            </div>
-            <div class="demo-split-view">
-              <div class="demo-code-pane">
-                <pre><code><span class="cmt">// Dynamic algorithm script</span>
-<span class="kwd">auto</span> <span class="var">input</span> = <span class="fn">get</span>().<span class="fn">toMatGray</span>();
-<span class="kwd">auto</span> <span class="var">output</span> = <span class="type">cv</span>::<span class="type">Mat</span>();
-
-<div class="code-interactive-highlight"><span class="kwd">int</span> <span class="var">range</span> = <span class="num" id="demoParamValText">127</span>; <span class="cmt">// @interactive-range(1, 255)</span></div>
-<span class="type">cv</span>::<span class="fn">threshold</span>(<span class="var">input</span>, <span class="var">output</span>, <span class="var">range</span>, <span class="num">255</span>,
-              <span class="type">cv</span>::<span class="const">THRESH_BINARY</span>);
-
-<span class="fn-pink">show</span>(<span class="var">output</span>);</code></pre>
-                
-                <div class="demo-slider-box">
-                  <div class="demo-slider-label">
-                    <span>Interactive Parameter: <code>range</code></span>
-                    <span class="val-pill" id="demoSliderBadge">Value: 127</span>
-                  </div>
-                  <input type="range" id="demoInteractiveSlider" value="127" min="1" max="255" class="param-slider demo-slider">
-                  <div class="slider-presets">
-                    <button class="preset-btn" data-val="1">Low (range = 1)</button>
-                    <button class="preset-btn active" data-val="127">Default (range = 127)</button>
-                    <button class="preset-btn" data-val="200">High (range = 200)</button>
-                  </div>
-                </div>
+                <div class="view"><canvas id="sv"></canvas></div>
+                <div class="bubbles"><span class="bub b"><span class="ico" style="--i:url(assets/icons/image-view-48.png)"></span>Image</span><span class="bub b">Mono 8</span><span class="bub sz">1600 × 900</span><span class="r"><span class="bub m fps">20.0 FPS</span><span class="bub mb2">100%</span></span></div>
               </div>
-
-              <div class="demo-canvas-pane">
-                <canvas id="demoCanvas" class="demo-canvas"></canvas>
-                <div class="canvas-caption">Real-Time Parameter Hot-Swap Output Stream</div>
+              <div class="dockr">
+                <div class="dock-t" style="padding:0 2px">Script Editor<span class="wb"><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+                <div class="etb"><button class="tbtn" aria-label="Assistant"><span class="ico" style="--i:url(assets/icons/ai-generated-text-48.png)"></span></button><span class="sp"></span><button class="tbtn" aria-label="Build"><span class="ico" style="--i:url(assets/icons/wrench-48.png)"></span></button><button class="tbtn blue" aria-label="Unload"><span class="ico" style="--i:url(assets/icons/plug-connected-48.png)"></span></button><button class="tbtn" aria-label="Settings"><span class="ico" style="--i:url(assets/icons/setting-48.png)"></span></button></div>
+                <div class="frame edf">
+                  <div class="tabs" id="stabs"><button class="on" data-p="code">Code Editor</button><button data-p="par">Interactive Parameters</button></div>
+                  <div class="page on" id="p-code">
+                    <div class="doc"><span class="field combo">Bond threshold</span><span class="sp"></span><button class="tbtn" aria-label="New"><span class="ico" style="--i:url(assets/icons/add-48.png)"></span></button><button class="tbtn" aria-label="Remove"><span class="ico" style="--i:url(assets/icons/minus-48.png)"></span></button><button class="tbtn" aria-label="Open"><span class="ico" style="--i:url(assets/icons/folder-48.png)"></span></button><button class="tbtn" aria-label="Save"><span class="ico" style="--i:url(assets/icons/save-48.png)"></span></button></div>
+                    <div class="code">
+<div data-n="1"><span class="c">// Binarize the bond wires for inspection</span></div>
+<div data-n="2" class="bi"><span class="ai">@init</span></div>
+<div data-n="3" class="bi">    <span class="c">// Optional one-time setup.</span></div>
+<div data-n="4" class="bi"><span class="ai">@endinit</span></div>
+<div data-n="5"> </div>
+<div data-n="6"><span class="k">auto</span> input = <span class="f">get</span>().<span class="fm">toMatGray</span>();</div>
+<div data-n="7"><span class="k">auto</span> output = <span class="t">cv</span>::<span class="t">Mat</span>();</div>
+<div data-n="8" class="hl"><span class="k">int</span> level = <span class="n" id="cv">150</span>; <span class="c">// @interactive-range(1, 255)</span></div>
+<div data-n="9"> </div>
+<div data-n="10"><span class="t">cv</span>::<span class="fm">threshold</span>(input, output, level, <span class="n">255</span>,</div>
+<div data-n="11">              <span class="t">cv</span>::THRESH_BINARY);</div>
+<div data-n="12" class="cur"><span class="f">show</span>(output);</div>
+                    </div>
+                    <div class="est"><span>Ln 12, Col 14</span><span>C++</span><span>Saved</span><span class="r">clangd</span></div>
+                  </div>
+                  <div class="page" id="p-par">
+                    <div class="params">
+                      <div class="prow"><span>level</span><span class="spin"><input id="num" type="number" min="1" max="255" value="150" aria-label="level"><i>⌃<br>⌄</i></span><input id="sl" class="rng" type="range" min="1" max="255" value="150" aria-label="level slider"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="frame con"><div class="hd">Console Logs<span>Clear</span><span class="ico xbtn" style="--i:url(assets/icons/close-window-outline-48.png);margin:0"></span></div><div class="bd" id="log"><div>[10:42:18.204] [INFO] Build finished.</div><div class="ok">[10:42:18.391] [INFO] Filter script active and injected into pipeline.</div><div id="logl">[10:42:19.007] [INFO] level = 150</div></div></div>
               </div>
             </div>
           </div>
         </div>
-
       </div>
-    </section>
+    </div>
+    </div>
+  </div>
+</section>
 
-    <!-- SECTION 3: Submodule Ecosystem (Clean 3-Card Grid) -->
-    <section class="section section-alt">
-      <div class="container">
-        <div class="section-title-wrapper">
-          <div class="section-tag">OPEN SOURCE REPOSITORIES</div>
-          <h2 class="section-title">Basler Korea Ecosystem</h2>
-          <p class="section-desc">Modular open-source hardware repositories maintained by Basler Korea Inc. (BaslerKR) on GitHub.</p>
-        </div>
-
-        <div class="repo-cards-grid">
-          <!-- Card 1 -->
-          <a href="https://github.com/BaslerKR/Camera" target="_blank" rel="noopener" class="repo-card">
-            <div class="repo-card-header">
-              <svg class="github-card-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-              <span class="repo-card-title">BaslerKR / Camera</span>
-            </div>
-            <p class="repo-card-desc">Hardware driver & acquisition interface for Basler 2D and 3D vision cameras.</p>
-            <span class="repo-card-link">github.com/BaslerKR/Camera ↗</span>
-          </a>
-
-          <!-- Card 2 -->
-          <a href="https://github.com/BaslerKR/Framegrabber" target="_blank" rel="noopener" class="repo-card">
-            <div class="repo-card-header">
-              <svg class="github-card-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-              <span class="repo-card-title">BaslerKR / Framegrabber</span>
-            </div>
-            <p class="repo-card-desc">High-throughput hardware interface for Basler CoaXPress framegrabbers.</p>
-            <span class="repo-card-link">github.com/BaslerKR/Framegrabber ↗</span>
-          </a>
-
-          <!-- Card 3 -->
-          <a href="https://github.com/BaslerKR/Gocator" target="_blank" rel="noopener" class="repo-card">
-            <div class="repo-card-header">
-              <svg class="github-card-icon" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-              <span class="repo-card-title">BaslerKR / Gocator</span>
-            </div>
-            <p class="repo-card-desc">3D sensor integration module for LMI Gocator devices running on GoPxL SDK.</p>
-            <span class="repo-card-link">github.com/BaslerKR/Gocator ↗</span>
-          </a>
-        </div>
-
+<!-- LIBRARIES -->
+<section class="section tint" id="libraries">
+  <div class="wrap">
+    <div class="sec-head reveal"><div><div class="eyebrow">External libraries</div><h2>Bring the code you already trust.</h2></div><p>Register any C++ library — your in-house vision code or a vendor SDK — with its include, library and runtime DLL paths and the libraries to link. Then <code>#include</code> it in a script.</p></div>
+    <div class="split">
+      <div class="copy reveal">
+        <ul class="points">
+          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/books-48.png)"></span></span><div><b>One list of libraries</b><span>Open Libraries from the main status bar, next to the loaded library count.</span></div></li>
+          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/folder-48.png)"></span></span><div><b>Headers, link files, DLLs</b><span>Point to <code>.h / .hpp</code> folders, <code>.lib</code> folders and files, and the <code>.dll</code> folder used at run time.</span></div></li>
+          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/plug-connected-48.png)"></span></span><div><b>Checked before the build</b><span>Paths and link files are resolved when you apply, so a missing library shows up here — not as a build error.</span></div></li>
+        </ul>
       </div>
-    </section>
-
-  </main>
-
-  <!-- Footer -->
-  <footer class="site-footer">
-    <div class="container">
-      <div class="footer-content">
-        <a href="#" class="brand-logo">
-          <img src="assets/app_icon.png" alt="Playground Logo" class="brand-logo-img">
-          <span class="brand-text">Playground</span>
-        </a>
-        <div class="footer-links">
-          <a href="https://github.com/Minu-Park/Basler-Playground/releases/latest" target="_blank" rel="noopener">Latest Release</a>
-          <a href="https://github.com/Minu-Park/Basler-Playground" target="_blank" rel="noopener">GitHub Repository</a>
+      <div class="stack reveal">
+        <div class="app dlg lapp">
+          <div class="tt">Libraries<span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></div>
+          <div class="body">
+            <div class="lcol"><span class="h">Libraries</span>
+              <div class="frame lst" id="libs">
+                <div class="it sel" data-l="0">BondMetrics</div>
+                <div class="it" data-l="1">VendorSDK</div>
+                <div class="ft"><button class="tbtn" aria-label="Add library"><span class="ico" style="--i:url(assets/icons/add-48.png)"></span></button><button class="tbtn" aria-label="Remove library"><span class="ico" style="--i:url(assets/icons/remove-48.png)"></span></button><span class="sp"></span><button class="tbtn" aria-label="Reset libraries"><span class="ico" style="--i:url(assets/icons/reset-48.png)"></span></button></div>
+              </div>
+            </div>
+            <div><span class="h" style="display:block;margin-bottom:12px">Library properties</span>
+              <div class="form">
+                <span class="lab">Name</span><span class="field full" id="lN">BondMetrics</span>
+                <span class="lab">Include path</span><span class="field" id="lI">D:/Vision/BondMetrics/include</span><span class="pbtn">Edit...</span>
+                <span class="hint">Select <b>.h / .hpp</b> folders.</span>
+                <span class="lab">Library path</span><span class="field" id="lD">D:/Vision/BondMetrics/lib/x64</span><span class="pbtn">Edit...</span>
+                <span class="hint">Select <b>.lib</b> folders.</span>
+                <span class="lab">Runtime DLL path</span><span class="field" id="lR">D:/Vision/BondMetrics/bin/x64</span><span class="pbtn">Edit...</span>
+                <span class="hint">Select <b>.dll</b> folders.</span>
+                <span class="lab">Library names</span><span class="field" id="lL">BondMetrics</span><span class="pbtn">Edit...</span>
+                <span class="hint">Select <b>.lib</b> files.</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="footer-copyright">
-          © 2026 Basler AG. Multi-Device Vision & Imaging Workspace.
+        <div class="app">
+          <div class="dock-t" style="height:34px;border-bottom:1px solid var(--border);padding:0 12px">bond_inspect<span style="font:600 10.5px 'JetBrains Mono';color:var(--text-2)">C++ · clangd</span></div>
+          <div class="code" style="border-top:0;padding:4px 0">
+<div data-n="1"><span class="p">#include</span> <span class="s">&lt;BondMetrics/Wire.h&gt;</span></div>
+<div data-n="2"> </div>
+<div data-n="3"><span class="k">auto</span> input = <span class="f">get</span>().<span class="fm">toMatGray</span>();</div>
+<div data-n="4"><span class="k">double</span> maxSag = <span class="n">0.12</span>; <span class="c">// @interactive-range(0.01, 0.5)</span></div>
+<div data-n="5"><span class="k">auto</span> wires = <span class="t">bm</span>::<span class="fm">traceWires</span>(input);</div>
+<div data-n="6"><span class="f">show</span>(<span class="t">bm</span>::<span class="fm">overlay</span>(input, wires, maxSag));</div>
+          </div>
+        </div>
+        <p class="note" style="margin-top:0">BondMetrics stands in for your own library.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MCP -->
+<section class="section" id="mcp">
+  <div class="wrap">
+    <div class="sec-head reveal"><div><div class="eyebrow">MCP connection</div><h2>Let your AI client work the bench.</h2></div><p>Turn on the MCP connection and a trusted AI client on this computer can open sessions, connect devices, read and change features, start acquisition and capture snapshots. Editing and running scripts needs a separate approval.</p></div>
+    <div class="mgrid">
+      <div class="app dlg mapp reveal" id="mapp">
+        <div class="tt">MCP Connection<span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></div>
+        <div class="body">
+          <div class="sec"><span class="h">Connection</span><span class="sw" id="msw"></span><span class="hint">This computer only · Streamable HTTP</span></div>
+          <span class="hint" id="mst" style="margin-top:8px">MCP is disabled.</span>
+          <div class="gap"></div>
+          <span class="h" style="font-size:13px">Server address</span>
+          <div class="addr" style="margin-top:6px"><span class="field ph" id="maddr">Available after enabling MCP</span><span class="ico" style="--i:url(assets/icons/copy-48.png);width:16px;height:16px"></span></div>
+          <span class="hint" style="margin-top:4px">Add this address to a trusted AI client using Streamable HTTP.</span>
+          <div class="gap" style="height:22px"></div>
+          <span class="h" style="font-size:13px">Script Editor</span>
+          <div class="sec" style="margin-top:8px"><span>Allow editing and execution</span><span class="sw" id="ssw"></span></div>
+          <span class="warnx">Scripts execute native code in a separate worker with processing and lifecycle time limits. They can still access your files and system with your permissions. Allow only clients and code you trust.</span>
+          <span class="hint" style="margin-top:6px">Connection and Script Editor approval are remembered across launches. Approval changes apply to new requests; accepted work may still finish.</span>
+          <div class="det"><span class="ico" style="--i:url(assets/icons/drop-down-arrow-48.png)"></span>Connection details</div>
+        </div>
+      </div>
+      <div class="chat reveal" id="chat">
+        <div class="hd"><span class="ico" style="--i:url(assets/icons/ai-generated-text-48.png);color:var(--accent)"></span>AI client<small>connected over MCP</small></div>
+        <div class="bd">
+          <div class="u typing">The acA2440 image is saturated. Bring exposure down until it isn't, then tell me the frame rate.</div>
+          <div class="tool typing">
+            <div><b>device.parameters.search</b>"Exposure"<i>ExposureTime = 35000</i></div>
+            <div><b>device.parameters.write</b>ExposureTime: 12000<i>ok</i></div>
+            <div><b>device.parameters.read</b>ResultingFrameRate<i>23.4</i></div>
+          </div>
+          <div class="a typing">Exposure is now 12 ms (was 35 ms) and the image is no longer clipped. The camera reports 23.4 fps.</div>
         </div>
       </div>
     </div>
-  </footer>
+    <p class="note">Example conversation with illustrative values. <code>device.parameters.*</code> are Playground's device feature tools.</p>
+  </div>
+</section>
 
-  <!-- Main JavaScript -->
-  <script src="main.js"></script>
+<!-- DEVICES -->
+<section class="section tint" id="devices">
+  <div class="wrap">
+    <div class="sec-head reveal"><div><div class="eyebrow">Device plugins</div><h2>Every device family.<br>One workspace.</h2></div><p>Each device family ships as its own plugin package with its own version. Install, update or remove them from Device › Manage Plugins — Playground itself stays the same.</p></div>
+    <div class="app dlg papp reveal">
+      <div class="tt">Plugins<span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></div>
+      <div class="top"><span class="field combo">All plugins</span><button class="tbtn" aria-label="Refresh"><span class="ico" style="--i:url(assets/icons/refresh-48.png)"></span></button></div>
+      <div class="panes">
+        <div class="frame plist" id="plist"></div>
+        <div class="frame det" id="pdet"></div>
+      </div>
+    </div>
+    <div class="dgrid">
+      <article class="dc cam reveal">
+        <div class="ph lineup"><figure style="flex:1.9"><img src="assets/img/p-ace2-t.jpg" alt="Basler ace 2 cameras"><figcaption>ace 2 · 2D</figcaption></figure><figure style="flex:1"><img src="assets/img/p-blaze-t.jpg" alt="Basler blaze ToF camera"><figcaption>blaze · ToF</figcaption></figure><figure style="flex:2"><img src="assets/img/p-stereo-ace-t.jpg" alt="Basler Stereo ace camera"><figcaption>Stereo ace · 3D</figcaption></figure></div>
+        <div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/camera-48.png)"></span><h3>Camera</h3><span class="tag">Basler pylon</span></div><p>Discover and configure Basler cameras, and acquire 2D images and supported 3D payloads.</p></div>
+      </article>
+      <article class="dc fg reveal">
+        <div class="ph"><img src="assets/img/p-cxp-t.jpg" alt="Basler CoaXPress frame grabbers"></div>
+        <div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/network-card-48.png)"></span><h3>Frame Grabber</h3><span class="tag">Basler Frame Grabber SDK</span></div><p>Discover Basler frame grabbers, load applets, and acquire images from multiple DMA channels.</p></div>
+      </article>
+      <article class="dc sm reveal"><div class="ph"><img src="assets/img/p-gocator-t.jpg" alt="LMI Gocator 2500 3D laser profiler"></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/lmi-48.png)"></span><h3>Gocator</h3><span class="tag">LMI GoPxL</span></div><p>Discover and configure Gocator sensors, and acquire profile and surface data.</p></div></article>
+      <article class="dc sm reveal"><div class="ph"><img src="assets/img/p-h8-t.jpg" alt="Heliotis heliInspect H8 with objective modules"></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/heliotis-48.png)"></span><h3>Heliotis C4</h3><span class="tag">C4Utility</span></div><p>Configure heliInspect H8 devices and acquire multipart measurement data through C4Utility.</p></div></article>
+      <article class="dc sm reveal"><div class="glyph"><span class="ico" style="--i:url(assets/icons/genicam-48.png)"></span></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/genicam-48.png)"></span><h3>GenICam</h3><span class="tag">GenTL / GenApi</span></div><p>Discover devices through GenTL producers, edit GenApi features, and acquire image and multipart data.</p></div></article>
+    </div>
+  </div>
+</section>
+
+
+<section class="dl" id="download">
+  <div class="wrap">
+    <img class="app-ico" src="assets/app_icon.png" alt="">
+    <h2>Get Basler Playground</h2>
+    <p>Install once. Add device plugins whenever you need them.</p>
+    <a class="btn btn-primary btn-lg" href="https://github.com/Minu-Park/Basler-Playground/releases/download/v0.6.4/BaslerPlayground-v0.6.4-Core-Windows-x64.exe" data-dl="primary"><span class="ico" style="--i:url(assets/icons/downloading-updates-48.png);width:17px;height:17px"></span><span data-dl-label>Download v0.6.4 for Windows</span></a>
+    <div class="dl-sub"><span data-dl-file>BaslerPlayground-v0.6.4-Core-Windows-x64.exe · 120 MB</span> · <a href="https://github.com/Minu-Park/Basler-Playground/releases/download/v0.6.4/BaslerPlayground-v0.6.4-Core-macOS-arm64.pkg" data-dl="alt"><span data-dl-alt>macOS (Apple silicon) installer</span></a></div>
+    <div class="meta"><span>Windows 10 / 11 · 64-bit</span><span>macOS · Apple silicon</span><a href="https://github.com/Minu-Park/Basler-Playground/releases">All releases &amp; SHA-256</a></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="top"><a href="#" class="brand"><img src="assets/app_icon.png" alt="">Basler Playground</a><span>Provided by Basler Korea</span><div class="links"><a href="https://github.com/Minu-Park/Basler-Playground/releases">Releases</a><a href="https://github.com/Minu-Park/Basler-Playground-Plugins">Plugins</a><a href="https://github.com/Minu-Park/Basler-Playground/issues">Report an issue</a></div></div>
+    <p class="cr">3D scans: National Institute of Standards and Technology, “Data for Filtering Organized 3D Point Clouds for Bin Picking Applications”, doi:10.18434/mds2-3138 — downsampled and re-centred for this page. Product photos and the wire-bond sample image © Basler AG; Gocator photo © LMI Technologies; heliInspect H8 photo © Heliotis AG. Application screens on this page are interactive reproductions of Playground's interface.</p>
+  </div>
+</footer>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{threshold:.12});
+$$('.reveal').forEach(el=>io.observe(el));
+const DPR=Math.min(2,devicePixelRatio||1);
+
+/* ================= Direct download =================
+   Release assets follow BaslerPlayground-v<ver>-Core-<OS>-<arch>.<ext>. Resolve the latest
+   release through the GitHub API so buttons download the installer instead of opening GitHub;
+   the static v0.6.4 links remain when the API is unavailable or rate-limited. */
+(async()=>{
+  const isMac=/Mac/i.test(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent);
+  try{
+    const r=await fetch('https://api.github.com/repos/Minu-Park/Basler-Playground/releases/latest',{headers:{Accept:'application/vnd.github+json'}});
+    if(!r.ok)return;const rel=await r.json(),ver=rel.tag_name;
+    const win=rel.assets.find(a=>/-Core-Windows-x64\.exe$/.test(a.name)),mac=rel.assets.find(a=>/-Core-macOS-arm64\.pkg$/.test(a.name));
+    const pri=isMac&&mac?mac:win,alt=pri===win?mac:win;if(!pri)return;
+    const os=pri===mac?'macOS':'Windows',mb=a=>Math.round(a.size/1048576)+' MB';
+    $$('[data-dl="primary"]').forEach(a=>a.href=pri.browser_download_url);
+    $$('[data-dl-label]').forEach((s,i)=>s.textContent=i===0?`Download for ${os}`:`Download ${ver} for ${os}`);
+    $$('[data-dl-file]').forEach(s=>s.textContent=`${pri.name} · ${mb(pri)}`);
+    $$('[data-dl="alt"]').forEach(a=>{if(alt){a.href=alt.browser_download_url;a.querySelector('[data-dl-alt]').textContent=alt===mac?'macOS (Apple silicon) installer':'Windows installer'}else a.style.display='none'});
+  }catch(e){}
+})();
+
+/* ================= HERO viewer ================= */
+const vp=$('#vp'),canvas=$('#gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(DPR);renderer.setClearColor(0xffffff,1);
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(30,1,1,5000);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=.08;controls.enablePan=false;controls.minDistance=260;controls.maxDistance=1400;controls.maxPolarAngle=1.35;controls.rotateSpeed=.6;
+
+const U={uLift:{value:0},uMix:{value:1},uHmax:{value:50},uOpacity:{value:1},uSize:{value:2.2*DPR},uShade:{value:0}};
+// Rainbow = GraphicsEngine sampleRainbow(): hue 240° (low) → 0° (high), full saturation and value.
+const common=`
+uniform float uLift,uMix,uHmax,uShade;attribute float aH;attribute float aV;attribute vec3 aNrm;attribute vec2 aGrid;varying vec3 vCol;varying float vV;
+// flat views place samples on the organized pixel grid; lifting morphs them onto measured XYZ
+vec3 basePos(){return vec3(mix(position.x,aGrid.x,1.-uLift),0.,mix(position.z,aGrid.y,1.-uLift));}
+vec3 rainbow(float v){v=clamp(v,0.,1.);float h=(2./3.)*(1.-v)*6.;float f=fract(h);int s=int(floor(h));
+ if(s==0)return vec3(1.,f,0.);if(s==1)return vec3(1.-f,1.,0.);if(s==2)return vec3(0.,1.,f);if(s==3)return vec3(0.,1.-f,1.);if(s==4)return vec3(f,0.,1.);return vec3(1.,0.,1.-f);}
+vec3 colorAt(){return mix(rainbow(aH/uHmax),color,uMix);}
+`;
+const meshMat=new THREE.ShaderMaterial({uniforms:U,vertexColors:true,transparent:true,
+  vertexShader:common+`void main(){vec3 p=basePos();p.y=aH*uLift;vV=aV;
+    vec3 n=normalize(aNrm);float l=.3+.6*max(dot(n,normalize(vec3(.45,1.,.55))),0.)+.2*pow(max(dot(n,normalize(vec3(-.5,.5,-.7))),0.),1.5);
+    vCol=colorAt()*mix(1.,l*1.05,uShade);gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);}`,
+  fragmentShader:`uniform float uOpacity,uLift;varying vec3 vCol;varying float vV;void main(){if(vV<.5)discard;gl_FragColor=vec4(vCol,uOpacity*smoothstep(.0,.25,uLift));}`});
+const flatMat=new THREE.ShaderMaterial({uniforms:U,vertexColors:true,transparent:true,
+  vertexShader:common+`void main(){vV=aV;vec3 nd=vec3(1.);vCol=vV>.5?colorAt():mix(nd,color,uMix);gl_Position=projectionMatrix*modelViewMatrix*vec4(aGrid.x,0.,aGrid.y,1.);}`,
+  fragmentShader:`uniform float uLift;varying vec3 vCol;void main(){float a=1.-smoothstep(.0,.3,uLift);if(a<.01)discard;gl_FragColor=vec4(vCol,a);}`});
+const ptsU={...U,uOpacity:{value:0}};ptsU.uLift=U.uLift;ptsU.uMix=U.uMix;ptsU.uHmax=U.uHmax;
+const ptsMat=new THREE.ShaderMaterial({uniforms:ptsU,vertexColors:true,transparent:true,depthWrite:false,
+  vertexShader:common+`uniform float uSize;void main(){vec3 p=basePos();p.y=aH*uLift;vV=aV;vCol=colorAt();vec4 mv=modelViewMatrix*vec4(p,1.);gl_PointSize=uSize*(620./-mv.z);gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`uniform float uOpacity;varying vec3 vCol;varying float vV;void main(){if(vV<.5)discard;vec2 c=gl_PointCoord-.5;if(dot(c,c)>.25)discard;gl_FragColor=vec4(vCol,uOpacity);}`});
+
+let mesh,flat,points,data;const cache={};
+const names={F:'bin-sprockets.ply',C:'bin-pins.ply',B:'bin-hex-nuts.ply'};
+async function load(name){
+  if(cache[name])return cache[name];
+  const buf=await (await fetch(`data/scene-${name}.bin`)).arrayBuffer(),dv=new DataView(buf);
+  const cols=dv.getUint16(0,true),rows=dv.getUint16(2,true),scale=dv.getFloat32(4,true),top=dv.getFloat32(24,true);
+  const n=cols*rows,rec=new Int16Array(buf,28,n*3),rgb=new Uint8Array(buf,28+n*6,n*3);
+  const pos=new Float32Array(n*3),h=new Float32Array(n),v=new Float32Array(n),col=new Float32Array(n*3);
+  let count=0;
+  for(let i=0;i<n;i++){const hi=rec[i*3+2];const ok=hi!==32767;v[i]=ok?1:0;if(ok)count++;
+    pos[i*3]=rec[i*3]*scale;pos[i*3+2]=rec[i*3+1]*scale;h[i]=ok?Math.max(0,hi*scale):0;
+    for(let k=0;k<3;k++)col[i*3+k]=Math.min(1,Math.pow(rgb[i*3+k]/255,.92)*1.18)}
+  const fit=o=>{let S=[0,0,0,0,0,0,0,0,0],B=[0,0,0];for(let r=0;r<rows;r+=4)for(let c=0;c<cols;c+=4){const i=r*cols+c;if(!v[i])continue;const a=[c,r,1],y=pos[i*3+o];for(let p=0;p<3;p++){B[p]+=a[p]*y;for(let q=0;q<3;q++)S[p*3+q]+=a[p]*a[q]}}
+    const M=new THREE.Matrix3().set(...S).invert().elements;return[0,1,2].map(p=>M[p]*B[0]+M[3+p]*B[1]+M[6+p]*B[2])};
+  const fx=fit(0),fz=fit(2),gp=new Float32Array(n*2),cc=(cols-1)/2,rc=(rows-1)/2,px=Math.hypot(fx[0],fz[0]),py=Math.hypot(fx[1],fz[1]);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const i=r*cols+c;gp[i*2]=(c-cc)*px*Math.sign(fx[0]||1);gp[i*2+1]=(r-rc)*py*Math.sign(fz[1]||1);
+    if(!v[i]){pos[i*3]=fx[0]*c+fx[1]*r+fx[2];pos[i*3+2]=fz[0]*c+fz[1]*r+fz[2]}}
+  const all=[];for(let r=0;r<rows-1;r++)for(let c=0;c<cols-1;c++){const a=r*cols+c;all.push(a,a+cols,a+1,a+1,a+cols,a+cols+1)}
+  const idx=[],lim=4.5;
+  for(let r=0;r<rows-1;r++)for(let c=0;c<cols-1;c++){const a=r*cols+c,b=a+1,d=a+cols,e=d+1;
+    if(v[a]&&v[b]&&v[d]&&Math.max(Math.abs(h[a]-h[b]),Math.abs(h[a]-h[d]),Math.abs(h[b]-h[d]))<lim)idx.push(a,d,b);
+    if(v[b]&&v[d]&&v[e]&&Math.max(Math.abs(h[e]-h[b]),Math.abs(h[e]-h[d]),Math.abs(h[b]-h[d]))<lim)idx.push(b,d,e)}
+  const nrm=new Float32Array(n*3);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const i=r*cols+c,l=c>0?i-1:i,rr=c<cols-1?i+1:i,u=r>0?i-cols:i,dd=r<rows-1?i+cols:i;
+    const dx=pos[rr*3]-pos[l*3]||1,dz=pos[dd*3+2]-pos[u*3+2]||1;const sx=(h[rr]-h[l])/dx,sz=(h[dd]-h[u])/dz;const L=Math.hypot(sx,1,sz);nrm[i*3]=-sx/L;nrm[i*3+1]=1/L;nrm[i*3+2]=-sz/L}
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('aH',new THREE.BufferAttribute(h,1));
+  geo.setAttribute('aV',new THREE.BufferAttribute(v,1));geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.setAttribute('aNrm',new THREE.BufferAttribute(nrm,3));geo.setAttribute('aGrid',new THREE.BufferAttribute(gp,2));
+  const mgeo=geo.clone();mgeo.setIndex(idx);const fgeo=geo.clone();fgeo.setIndex(all);
+  return cache[name]={cols,rows,top,count,geo,mgeo,fgeo,pitchX:Math.hypot(fx[0],fz[0]),pitchY:Math.hypot(fx[1],fz[1])};
+}
+async function show(name){
+  const d=await load(name);data=d;
+  if(mesh)scene.remove(mesh,flat,points);
+  mesh=new THREE.Mesh(d.mgeo,meshMat);flat=new THREE.Mesh(d.fgeo,flatMat);points=new THREE.Points(d.geo,ptsMat);flat.renderOrder=-1;points.renderOrder=1;
+  scene.add(flat,mesh,points);U.uHmax.value=Math.max(20,d.top);
+  curName=name;updSz();$('#loading').style.display='none';
+}
+
+const TOP={pol:.0001,az:0,dist:560},OBL={pol:.9,az:.55,dist:575};
+const sph=new THREE.Spherical(TOP.dist,TOP.pol,TOP.az);
+function placeCam(){camera.position.setFromSpherical(sph);camera.up.set(0,1,0);if(sph.phi<.01)camera.up.set(0,0,-1);camera.lookAt(0,0,0);controls.target.set(0,0,0)}
+const MODES={
+  image:{lift:0,mix:1,shade:0,mesh:1,pts:0,cam:TOP,icon:'image-view',label:'Image',col:'RGB'},
+  range:{lift:0,mix:0,shade:0,mesh:1,pts:0,cam:TOP,icon:'depth',label:'Range',col:'Rainbow'},
+  surface:{lift:1,mix:0,shade:1,mesh:1,pts:0,cam:OBL,icon:'orthogonal-view',label:'Surface',col:'Rainbow'},
+  points:{lift:1,mix:0,shade:0,mesh:0,pts:1,cam:OBL,icon:'map-grid',label:'PointCloud',col:'Rainbow'}};
+let mode='image',tw=null,userCam=null,curName='F',bgK=0;
+// 2D image views and the 3D (VTK) view use different chrome: background, toolbar groups and status bubbles.
+const BG2=new THREE.Color(0xffffff),BG3=new THREE.Color(0x1e2124),bgC=new THREE.Color();
+const happ=document.querySelector('.happ');
+function updSz(){if(!data)return;$('#szBub').textContent=MODES[mode].cam===OBL?`${data.cols}×${data.rows}`:`${data.cols} × ${data.rows} / ${names[curName]}`}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function setMode(m,fromUser){
+  if(!MODES[m])return;const prev=MODES[mode],next=MODES[m];
+  if(prev.cam===OBL&&!tw){const s=new THREE.Spherical().setFromVector3(camera.position);userCam={pol:s.phi,az:s.theta,dist:s.radius}}
+  mode=m;const from={lift:U.uLift.value,mix:U.uMix.value,shade:U.uShade.value,mesh:U.uOpacity.value,pts:ptsU.uOpacity.value,pol:sph.phi,az:sph.theta,dist:sph.radius,bg:bgK};
+  const is3=next.cam===OBL;happ.classList.toggle('is3d',is3);happ.classList.toggle('is2d',!is3);updSz();
+  const tc=next.cam===OBL?(userCam||OBL):TOP;let az=tc.az;while(az-from.az>Math.PI)az-=2*Math.PI;while(az-from.az<-Math.PI)az+=2*Math.PI;
+  tw={t0:performance.now(),dur:reduce?1:1250,from,to:{lift:next.lift,mix:next.mix,shade:next.shade,mesh:next.mesh,pts:next.pts,pol:tc.pol,az,dist:tc.dist,bg:is3?1:0}};
+  controls.enabled=false;
+  $$('#rail button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $$('#modeMenu button').forEach(b=>b.classList.toggle('cur',b.dataset.m===m));
+  $('#modeIco').style.setProperty('--i',`url(assets/icons/${next.icon}-48.png)`);$('#modeLbl').textContent=next.label;$('#colBub').textContent=next.col;
+  if(fromUser)stopAuto();
+}
+function step(now){
+  if(tw){const k=Math.min(1,(now-tw.t0)/tw.dur),e=ease(k),f=tw.from,t=tw.to,L=(a,b)=>a+(b-a)*e;
+    const kl=t.lift>f.lift?ease(Math.min(1,Math.max(0,(k-.25)/.75))):ease(Math.min(1,k/.7));
+    U.uLift.value=f.lift+(t.lift-f.lift)*kl;U.uMix.value=L(f.mix,t.mix);U.uShade.value=f.shade+(t.shade-f.shade)*kl;
+    U.uOpacity.value=L(f.mesh,t.mesh);ptsU.uOpacity.value=L(f.pts,t.pts);bgK=L(f.bg,t.bg);
+    sph.set(L(f.dist,t.dist),Math.max(.0001,L(f.pol,t.pol)),L(f.az,t.az));placeCam();
+    if(k>=1){tw=null;if(MODES[mode].cam===OBL){controls.enabled=true;camera.up.set(0,1,0)}}
+  }else if(MODES[mode].cam===OBL){controls.autoRotate=!reduce&&autoOn;controls.autoRotateSpeed=.55;controls.update()}
+  if(mesh){flat.visible=U.uLift.value<.3;mesh.visible=U.uOpacity.value>.01&&U.uLift.value>.001;points.visible=ptsU.uOpacity.value>.01;meshMat.depthWrite=U.uOpacity.value>.98}
+  renderer.setClearColor(bgC.copy(BG2).lerp(BG3,bgK),1);
+  renderer.render(scene,camera);requestAnimationFrame(step);
+}
+function resize(){const r=vp.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(vp);
+
+/* mode bubble → display-mode popup, as in the application */
+const menu=$('#modeMenu'),bub=$('#modeBub');
+bub.onclick=e=>{e.stopPropagation();const open=!menu.classList.contains('show');menu.classList.toggle('show',open);bub.classList.toggle('open',open);
+  if(open){const r=bub.getBoundingClientRect(),p=bub.closest('.main').getBoundingClientRect();menu.style.left=(r.left-p.left)+'px';menu.style.bottom=(p.bottom-r.top+6)+'px'}};
+document.addEventListener('click',()=>{menu.classList.remove('show');bub.classList.remove('open')});
+$$('#modeMenu button').forEach(b=>b.onclick=()=>setMode(b.dataset.m,true));
+$$('#rail button').forEach(b=>b.onclick=()=>setMode(b.dataset.m,true));
+// 3D toolbar: rotate in 15° steps, reset returns to the default camera
+$$('#hTb [data-rot]').forEach(b=>b.onclick=()=>{if(MODES[mode].cam!==OBL||tw)return;stopAuto();const s=new THREE.Spherical().setFromVector3(camera.position),k=Math.PI/12,r=b.dataset.rot;
+  if(r==='l')s.theta-=k;if(r==='r')s.theta+=k;if(r==='u')s.phi=Math.max(.2,s.phi-k);if(r==='d')s.phi=Math.min(1.35,s.phi+k);camera.position.setFromSpherical(s);camera.lookAt(0,0,0)});
+$('#resetBtn').onclick=()=>{if(MODES[mode].cam!==OBL)return;stopAuto();userCam=null;sph.setFromVector3(camera.position);const m=mode;mode='image';setMode(m,true)};
+canvas.addEventListener('pointermove',e=>{if(!data)return;const r=canvas.getBoundingClientRect();$('#xyBub').innerHTML=`X ${Math.round((e.clientX-r.left)/r.width*data.cols)}&nbsp;&nbsp;Y ${Math.round((e.clientY-r.top)/r.height*data.rows)}`});
+$$('#scenes div').forEach(it=>it.onclick=async()=>{$$('#scenes div').forEach(x=>x.classList.toggle('sel',x===it));await show(it.dataset.s)});
+
+const order=['image','range','surface','points'];let autoOn=!reduce,autoT=null;const DWELL=4200;
+function scheduleAuto(){clearTimeout(autoT);if(!autoOn)return;document.documentElement.style.setProperty('--dwell',DWELL+'ms');autoT=setTimeout(()=>{setMode(order[(order.indexOf(mode)+1)%4]);scheduleAuto()},DWELL)}
+function stopAuto(){autoOn=false;clearTimeout(autoT);document.documentElement.style.setProperty('--dwell','0s')}
+canvas.addEventListener('pointerdown',()=>{if(MODES[mode].cam===OBL)stopAuto()});
+/* scroll drives the mode while the pinned window is on screen; when scrolling stops the timer takes over again */
+const scrolly=$('#scrolly');let scrollIdx=-1;
+addEventListener('scroll',()=>{if(getComputedStyle(scrolly.querySelector('.hero-stage')).position!=='sticky')return;
+  const r=scrolly.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0||r.top>0||r.bottom<innerHeight)return;
+  const idx=Math.min(3,Math.floor(-r.top/span*4));if(idx!==scrollIdx){scrollIdx=idx;if(order[idx]!==mode)setMode(order[idx])}
+  if(autoOn)scheduleAuto()},{passive:true});
+/* 2D views fit the organized frame into the viewport, like the application's Fit */
+function fitTop(){if(!data)return;const t=Math.tan(THREE.MathUtils.degToRad(15)),w=data.cols*data.pitchX,h=data.rows*data.pitchY;
+  TOP.dist=Math.max(h/2/t,w/2/(t*camera.aspect))*1.06;if(MODES[mode].cam===TOP&&!tw){sph.radius=TOP.dist;placeCam()}}
+new ResizeObserver(fitTop).observe(vp);
+
+placeCam();resize();
+await show('F');fitTop();
+const start='image',sm=MODES[start];
+bgK=sm.cam===OBL?1:0;U.uLift.value=sm.lift;U.uMix.value=sm.mix;U.uShade.value=sm.shade;U.uOpacity.value=sm.mesh;ptsU.uOpacity.value=sm.pts;
+sph.set(sm.cam.dist,sm.cam.pol,sm.cam.az);placeCam();setMode(start);tw=null;if(sm.cam===OBL)controls.enabled=true;
+requestAnimationFrame(step);scheduleAuto();
+new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)clearTimeout(autoT);else if(autoOn)scheduleAuto()})).observe(vp);
+
+/* ================= Measure: ROIs and analysis on the real range frame =================
+   Mirrors GraphicsEngine: rectangle/line overlays (white 5px outline, Basler blue 2px, orange on hover),
+   the context-menu order, region labels R#/L#, and the Measure row contract
+   Target | Field | Unit | Valid / Total samples | Min | Max | Mean | StdDev (population) | Time. */
+{
+  const mv=$('#mview'),mc=$('#mcv'),roisEl=$('#rois'),ctx=$('#ctx'),FILE='bin-sprockets.ply';
+  const D=await load('F'),HH=D.geo.attributes.aH.array,VV=D.geo.attributes.aV.array,C=D.cols,R=D.rows;
+  const rb=v=>{v=Math.min(1,Math.max(0,v));const h=(2/3)*(1-v)*6,f=h-Math.floor(h),s=Math.floor(h)%6;return[[1,f,0],[1-f,1,0],[0,1,f],[0,1-f,1],[f,0,1],[1,0,1-f]][s]};
+  const base=document.createElement('canvas');base.width=C;base.height=R;{const g=base.getContext('2d'),im=g.createImageData(C,R);
+    for(let i=0;i<C*R;i++){const c=VV[i]?rb(HH[i]/D.top):[1,1,1];im.data[i*4]=c[0]*255;im.data[i*4+1]=c[1]*255;im.data[i*4+2]=c[2]*255;im.data[i*4+3]=255}g.putImageData(im,0,0)}
+  let F={x:0,y:0,s:1},rois=[],nR=1,nL=1,hov=-1,menuTarget=-1,tool='rect',drag=null,rows=[],tabs=[{id:'m',t:'Measure'}],act='m',selRow=-1,plots={};
+  function draw(){const r=mv.getBoundingClientRect();mc.width=r.width*DPR;mc.height=r.height*DPR;const g=mc.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,mc.width,mc.height);
+    const s=Math.min((r.width-20)/C,(r.height-20)/R);F={s,x:(r.width-C*s)/2,y:(r.height-R*s)/2};g.imageSmoothingEnabled=false;g.drawImage(base,F.x*DPR,F.y*DPR,C*s*DPR,R*s*DPR);renderRois()}
+  const toG=e=>{const r=mv.getBoundingClientRect();return[Math.max(0,Math.min(C,(e.clientX-r.left-F.x)/F.s)),Math.max(0,Math.min(R,(e.clientY-r.top-F.y)/F.s))]};
+  const sx=x=>F.x+x*F.s,sy=y=>F.y+y*F.s;
+  function renderRois(){let html='',svg='';rois.forEach((o,i)=>{const hv=i===hov;
+    if(o.k==='R'){const x=Math.min(o.a[0],o.b[0]),y=Math.min(o.a[1],o.b[1]),w=Math.abs(o.b[0]-o.a[0]),h=Math.abs(o.b[1]-o.a[1]);
+      const hd=[[0,0],[1,0],[0,1],[1,1]].map(([u,v])=>`<i class="hd" style="left:${u*100}%;top:${v*100}%;transform:translate(-50%,-50%)"></i>`).join('');
+      html+=`<div class="roi${hv?' hov':''}" style="left:${sx(x)}px;top:${sy(y)}px;width:${w*F.s}px;height:${h*F.s}px"><span class="lb">${o.name}</span>${hv?hd:''}</div>`}
+    else{const c=hv?'rgb(255,140,0)':'rgb(0,111,191)',[x1,y1,x2,y2]=[sx(o.a[0]),sy(o.a[1]),sx(o.b[0]),sy(o.b[1])];
+      svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="5" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2" stroke-linecap="round"/>`;
+      html+=`<div class="lroi" style="left:${x1}px;top:${y1}px"><span class="lb">${o.name}</span></div>`}});
+    roisEl.innerHTML=`<svg>${svg}</svg>`+html}
+  function hit(g){for(let i=rois.length-1;i>=0;i--){const o=rois[i];if(o.k==='R'){const x0=Math.min(o.a[0],o.b[0]),x1=Math.max(o.a[0],o.b[0]),y0=Math.min(o.a[1],o.b[1]),y1=Math.max(o.a[1],o.b[1]);if(g[0]>=x0&&g[0]<=x1&&g[1]>=y0&&g[1]<=y1)return i}
+    else{const[ax,ay]=o.a,[bx,by]=o.b,dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((g[0]-ax)*dx+(g[1]-ay)*dy)/(dx*dx+dy*dy||1)));if(Math.hypot(ax+t*dx-g[0],ay+t*dy-g[1])*F.s<7)return i}}return -1}
+  function samples(o){const out=[];let total=0;
+    if(!o){for(let i=0;i<C*R;i++){total++;if(VV[i])out.push(HH[i])}return{out,total}}
+    if(o.k==='R'){const x0=Math.floor(Math.min(o.a[0],o.b[0])),x1=Math.ceil(Math.max(o.a[0],o.b[0])),y0=Math.floor(Math.min(o.a[1],o.b[1])),y1=Math.ceil(Math.max(o.a[1],o.b[1]));
+      for(let y=y0;y<Math.min(R,y1);y++)for(let x=x0;x<Math.min(C,x1);x++){total++;const i=y*C+x;if(VV[i])out.push(HH[i])}return{out,total,x0,x1,y0,y1}}
+    const n=Math.max(2,Math.ceil(Math.hypot(o.b[0]-o.a[0],o.b[1]-o.a[1]))+1),seq=[];
+    for(let k=0;k<n;k++){const t=k/(n-1),x=Math.min(C-1,Math.round(o.a[0]+t*(o.b[0]-o.a[0]))),y=Math.min(R-1,Math.round(o.a[1]+t*(o.b[1]-o.a[1]))),i=y*C+x;total++;seq.push(VV[i]?HH[i]:NaN);if(VV[i])out.push(HH[i])}return{out,total,seq}}
+  const fmt=v=>Number.isFinite(v)?String(Number(v.toPrecision(5))):'—';
+  const stamp=()=>{const d=new Date(),p=(n,w=2)=>String(n).padStart(w,'0');return`${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(),3)}`};
+  function measure(o){const{out,total}=samples(o);let mn=Infinity,mx=-Infinity,sum=0;for(const v of out){if(v<mn)mn=v;if(v>mx)mx=v;sum+=v}const mean=sum/out.length;let q=0;for(const v of out)q+=(v-mean)**2;
+    return{valid:out.length,total,min:mn,max:mx,mean,std:Math.sqrt(q/out.length),time:stamp()}}
+  function addRow(o){rows.push({o,live:false,...measure(o)});selRow=rows.length-1;act='m';renderTabs()}
+  const title=t=>{let n=t,k=2;while(tabs.some(x=>x.t===n))n=`${t} - ${k++}`;return n};
+  function addPlot(kind,o){const lbl=o?o.name:'Full Image',id='p'+Math.random().toString(36).slice(2,7);const{out,seq,x0,x1,y0,y1}=samples(o);let xs=[],ys=[];
+    if(kind==='hist'){const mn=Math.min(...out),mx=Math.max(...out),nb=48,b=new Array(nb).fill(0);for(const v of out)b[Math.min(nb-1,Math.floor((v-mn)/(mx-mn||1)*nb))]++;xs=b.map((_,i)=>mn+(i+.5)*(mx-mn)/nb);ys=b}
+    else if(o&&o.k==='L'){ys=seq;xs=seq.map((_,i)=>i)}
+    else{const X0=o?x0:0,X1=o?Math.min(C,x1):C,Y0=o?y0:0,Y1=o?Math.min(R,y1):R;for(let x=X0;x<X1;x++){let s=0,n=0;for(let y=Y0;y<Y1;y++){const i=y*C+x;if(VV[i]){s+=HH[i];n++}}xs.push(x);ys.push(n?s/n:NaN)}}
+    const fn=kind==='hist'?'Histogram':(o&&o.k==='L'?'Profile':'Projection');tabs.push({id,t:title(`${fn} (${lbl})`)});plots[id]={kind,xs,ys,yl:kind==='hist'?'Count':'Range (mm)',xl:kind==='hist'?'Range (mm)':(o&&o.k==='L'?'Distance (px)':'X (px)')};act=id;renderTabs()}
+  function renderTabs(){$('#atabs').innerHTML=tabs.map(t=>`<button class="${t.id===act?'on':''}" data-t="${t.id}">${t.t}</button>`).join('');
+    $$('#atabs button').forEach(b=>b.onclick=()=>{act=b.dataset.t;renderTabs()});
+    const pg=$('#apage');if(act==='m'){pg.innerHTML=`<div class="mtab"><table><thead><tr><th>Live</th><th>Target</th><th>Field</th><th>Unit</th><th class="nr">Valid / Total samples</th><th class="nr">Min</th><th class="nr">Max</th><th class="nr">Mean</th><th class="nr">StdDev (population)</th><th>Time</th></tr></thead><tbody>${
+      rows.length?rows.map((r,i)=>`<tr class="${i===selRow?'sel':''}" data-i="${i}"><td><span class="sw${r.live?' on':''}" data-live="${i}"></span></td><td>${FILE} / ${r.o?r.o.name:'Full Image'}</td><td>Range</td><td>mm</td><td class="nr">${r.valid} / ${r.total}</td><td class="nr">${fmt(r.min)}</td><td class="nr">${fmt(r.max)}</td><td class="nr">${fmt(r.mean)}</td><td class="nr">${fmt(r.std)}</td><td>${r.time}</td></tr>`).join(''):'<tr><td colspan="10" class="empty">Right-click the view and choose Measure.</td></tr>'}</tbody></table></div>`;
+      $$('#apage tr[data-i]').forEach(tr=>tr.onclick=e=>{const lv=e.target.dataset.live;if(lv!==undefined){rows[+lv].live=!rows[+lv].live}selRow=+tr.dataset.i;renderTabs()})}
+    else{pg.innerHTML='<div class="aplot"><canvas></canvas></div>';plot(pg.querySelector('canvas'),plots[act])}}
+  function plot(cv,p){const r=cv.getBoundingClientRect();cv.width=r.width*DPR;cv.height=r.height*DPR;const g=cv.getContext('2d'),W=cv.width,Hh=cv.height,d=DPR;
+    const L=58*d,Rr=14*d,T=14*d,B=28*d,fy=p.ys.filter(Number.isFinite),y0=p.kind==='hist'?0:Math.min(...fy),y1=Math.max(...fy),xa=p.xs[0],xb=p.xs[p.xs.length-1];
+    const X=x=>L+(x-xa)/((xb-xa)||1)*(W-L-Rr),Y=y=>T+(1-(y-y0)/((y1-y0)||1))*(Hh-T-B);
+    g.font=`${10.5*d}px Inter`;g.fillStyle='#6e6e6d';g.strokeStyle='#ececeb';g.lineWidth=d;
+    for(let k=0;k<=5;k++){const y=T+(Hh-T-B)*k/5;g.beginPath();g.moveTo(L,y);g.lineTo(W-Rr,y);g.stroke();const v=y1-(y1-y0)*k/5;g.textAlign='right';g.fillText(String(Number(v.toPrecision(4))),L-8*d,y+3.5*d)}
+    g.textAlign='left';g.fillText(String(Number(xa.toPrecision(4))),L,Hh-9*d);g.textAlign='right';g.fillText(String(Number(xb.toPrecision(4))),W-Rr,Hh-9*d);g.textAlign='center';g.fillStyle='#3c3c3b';g.fillText(p.xl,(L+W)/2,Hh-9*d);
+    g.save();g.translate(14*d,(T+Hh-B)/2);g.rotate(-Math.PI/2);g.fillText(p.yl,0,0);g.restore();
+    g.strokeStyle='#4a78d0';g.lineWidth=1.6*d;
+    if(p.kind==='hist'){const bw=(W-L-Rr)/p.xs.length;g.fillStyle='rgba(74,120,208,.22)';p.ys.forEach((v,i)=>{const x=L+i*bw,y=Y(v);g.fillRect(x+1,y,bw-2,Hh-B-y);g.strokeRect(x+1,y,bw-2,Hh-B-y)})}
+    else{g.beginPath();let pen=false;p.xs.forEach((x,i)=>{const v=p.ys[i];if(!Number.isFinite(v)){pen=false;return}pen?g.lineTo(X(x),Y(v)):g.moveTo(X(x),Y(v));pen=true});g.stroke()}
+    g.fillStyle='rgba(255,255,255,.9)';g.strokeStyle='#d9d9d8';g.lineWidth=d;const lw=74*d;g.beginPath();g.roundRect(L+8*d,T+6*d,lw,22*d,8*d);g.fill();g.stroke();g.fillStyle='#4a78d0';g.beginPath();g.arc(L+20*d,T+17*d,4*d,0,7);g.fill();g.fillStyle='#3c3c3b';g.textAlign='left';g.fillText('Range',L+30*d,T+21*d)}
+  function openMenu(e){const r=mv.getBoundingClientRect();menuTarget=hov;const has=rois.length>0;
+    ctx.querySelectorAll('[data-g="del"]').forEach(x=>x.style.display=menuTarget>=0?'':'none');ctx.querySelectorAll('[data-g="clr"]').forEach(x=>x.style.display=has?'':'none');
+    ctx.querySelector('[data-a="proj"]').textContent=menuTarget>=0&&rois[menuTarget].k==='L'?'Profile':'Projection';
+    ctx.classList.add('show');const w=ctx.offsetWidth,h=ctx.offsetHeight;ctx.style.left=Math.min(r.width-w-6,e.clientX-r.left)+'px';ctx.style.top=Math.min(r.height-h-6,Math.max(6,e.clientY-r.top))+'px';ctx.style.bottom='auto'}
+  const closeMenu=()=>ctx.classList.remove('show');
+  ctx.addEventListener('pointerdown',e=>e.stopPropagation());
+  ctx.querySelectorAll('button').forEach(b=>b.onclick=()=>{const a=b.dataset.a,o=menuTarget>=0?rois[menuTarget]:null;closeMenu();
+    if(a==='line'||a==='rect'){tool=a;$('#mhint').textContent=`Drag to draw a ${a==='line'?'Line':'Rectangle'}`;$('#mhint').style.opacity=1}
+    else if(a==='measure')addRow(o);else if(a==='hist'||a==='proj')addPlot(a,o);
+    else if(a==='delete'&&o){rois.splice(menuTarget,1);hov=-1;renderRois()}else if(a==='clear'){rois=[];hov=-1;renderRois()}
+    else if(a==='clearres'){rows=[];tabs=[{id:'m',t:'Measure'}];act='m';plots={};renderTabs()}});
+  document.addEventListener('pointerdown',e=>{if(!ctx.contains(e.target))closeMenu()});
+  mv.addEventListener('contextmenu',e=>{e.preventDefault();openMenu(e)});
+  mv.addEventListener('pointerdown',e=>{if(e.button!==0)return;closeMenu();const g=toG(e);drag={k:tool==='line'?'L':'R',a:g,b:g};mv.setPointerCapture(e.pointerId)});
+  mv.addEventListener('pointermove',e=>{const g=toG(e);$('#mxy').innerHTML=`X ${Math.floor(g[0])}&nbsp;&nbsp;Y ${Math.floor(g[1])}`;
+    if(drag){drag.b=g;const tmp={...drag,name:drag.k==='L'?`L${nL}`:`R${nR}`};const keep=rois;rois=[...keep,tmp];hov=rois.length-1;renderRois();rois=keep;return}
+    const h=hit(g);if(h!==hov){hov=h;renderRois()}});
+  mv.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;const big=Math.hypot((d.b[0]-d.a[0])*F.s,(d.b[1]-d.a[1])*F.s)>12;
+    if(!big){renderRois();return}const o={k:d.k,a:d.a,b:d.b,name:d.k==='L'?`L${nL++}`:`R${nR++}`};rois.push(o);hov=rois.length-1;renderRois();
+    $('#mhint').textContent=`Right-click ${o.name} → Measure`;$('#mhint').style.opacity=1;openMenu(e)});
+  mv.addEventListener('pointerleave',()=>{if(!drag&&hov>=0){hov=-1;renderRois()}});
+  // live rows follow new frames: the source repeats this scan, so values hold and the result time advances
+  setInterval(()=>{if(rows.some(r=>r.live)){rows.forEach(r=>{if(r.live)Object.assign(r,measure(r.o))});if(act==='m')renderTabs()}},1000);
+  new ResizeObserver(()=>{draw();if(act!=='m')renderTabs()}).observe(mv);
+  rois=[{k:'R',a:[196,150],b:[262,214],name:'R1'},{k:'L',a:[60,300],b:[420,118],name:'L1'}];nR=2;nL=2;
+  draw();rows.push({o:null,live:false,...measure(null)});rows.push({o:rois[0],live:true,...measure(rois[0])});selRow=1;renderTabs();
+}
+
+/* ================= Script Editor on a real image ================= */
+const sv=$('#sv'),sl=$('#sl'),num=$('#num');let srcPx=null,sw=0,sh=0;
+const img=new Image();img.src='assets/img/mono-wirebond.jpg';
+img.onload=()=>{const c=document.createElement('canvas');sw=c.width=img.width;sh=c.height=img.height;const g=c.getContext('2d');g.drawImage(img,0,0);srcPx=g.getImageData(0,0,sw,sh);drawS()};
+function drawS(){if(!srcPx)return;const r=sv.getBoundingClientRect();sv.width=r.width*DPR;sv.height=r.height*DPR;const g=sv.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,sv.width,sv.height);
+  const lv=+sl.value,out=new ImageData(sw,sh),s=srcPx.data,o=out.data;
+  for(let i=0;i<s.length;i+=4){const b=s[i]>lv?255:0;o[i]=o[i+1]=o[i+2]=b;o[i+3]=255}
+  const tmp=document.createElement('canvas');tmp.width=sw;tmp.height=sh;tmp.getContext('2d').putImageData(out,0,0);
+  const pad=10*DPR,k=Math.min((sv.width-pad*2)/sw,(sv.height-pad*2)/sh),dw=sw*k,dh=sh*k;g.imageSmoothingQuality='high';g.drawImage(tmp,(sv.width-dw)/2,(sv.height-dh)/2,dw,dh)}
+let pend=false;function setL(v){v=Math.max(1,Math.min(255,Math.round(+v)||1));sl.value=num.value=v;sl.style.setProperty('--p',((v-1)/254*100)+'%');$('#cv').textContent=v;
+  if($('#logl'))$('#logl').textContent=`[${new Date().toTimeString().slice(0,8)}.${String(Date.now()%1000).padStart(3,'0')}] [INFO] level = ${v}`;if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;drawS()})}}
+sl.oninput=e=>setL(e.target.value);num.oninput=e=>setL(e.target.value);setL(150);
+$$('#stabs button').forEach(b=>b.onclick=()=>{$$('#stabs button').forEach(x=>x.classList.toggle('on',x===b));$('#p-code').classList.toggle('on',b.dataset.p==='code');$('#p-par').classList.toggle('on',b.dataset.p==='par')});
+new ResizeObserver(()=>drawS()).observe(sv);
+/* scroll story: Write (Code Editor) → Build & load (console, plugged-in glyph) → Tune (Interactive Parameters, level follows scroll) */
+{
+  const sc=$('#scrolly2'),steps=$$('#ssteps li'),plug=document.querySelector('.sapp .etb .tbtn[aria-label="Unload"]'),logEl=$('#log');
+  const t0=()=>new Date().toTimeString().slice(0,8);let phase=-1;
+  const logs=['<div>Synthetic processing state. No worker is running.</div>',
+    `<div>[${t0()}.204] [INFO] Build finished.</div><div class="ok">[${t0()}.391] [INFO] Filter script active and injected into pipeline.</div><div id="logl"></div>`];
+  function setPhase(p){if(p===phase)return;phase=p;steps.forEach((li,i)=>li.classList.toggle('on',i===p));
+    plug.classList.toggle('blue',p>=1);plug.setAttribute('aria-label',p>=1?'Unload':'Load');
+    if(p===0){logEl.innerHTML=logs[0]}else if(p>=1&&!$('#logl')){logEl.innerHTML=logs[1]}
+    $$('#stabs button')[p===2?1:0].click()}
+  addEventListener('scroll',()=>{if(getComputedStyle(sc.firstElementChild).position!=='sticky')return;
+    const r=sc.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0)return;const k=Math.min(1,Math.max(0,-r.top/span));
+    setPhase(k<.22?0:k<.4?1:2);if(k>=.4)setL(40+(k-.4)/.6*180)},{passive:true});
+  if(getComputedStyle(sc.firstElementChild).position==='sticky')setPhase(0);
+}
+
+/* ================= Libraries ================= */
+const libs=[['BondMetrics','D:/Vision/BondMetrics/include','D:/Vision/BondMetrics/lib/x64','D:/Vision/BondMetrics/bin/x64','BondMetrics'],['VendorSDK','C:/Program Files/VendorSDK/include','C:/Program Files/VendorSDK/lib','C:/Program Files/VendorSDK/bin','VendorSDK; VendorSDKImaging']];
+$$('#libs .it').forEach(r=>r.onclick=()=>{$$('#libs .it').forEach(x=>x.classList.toggle('sel',x===r));const l=libs[+r.dataset.l];['lN','lI','lD','lR','lL'].forEach((id,k)=>$('#'+id).textContent=l[k])});
+
+/* ================= MCP ================= */
+const mapp=$('#mapp');
+function setMcp(on){$('#msw').classList.toggle('on',on);$('#mst').textContent=on?'Ready · 1 client session(s)':'MCP is disabled.';const a=$('#maddr');a.textContent=on?'http://127.0.0.1:38171/mcp':'Available after enabling MCP';a.classList.toggle('ph',!on)}
+$('#msw').onclick=()=>setMcp(!$('#msw').classList.contains('on'));
+$('#ssw').onclick=()=>{const s=$('#ssw');s.classList.toggle('on');mapp.classList.toggle('scripts',s.classList.contains('on'))};
+const chatEls=$$('#chat .typing');
+function playChat(){setTimeout(()=>setMcp(true),reduce?0:300);chatEls.forEach((el,i)=>setTimeout(()=>el.classList.add('in'),reduce?0:900+i*900))}
+new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){playChat();o.disconnect()}}),{threshold:.35}).observe($('#chat'));
+
+/* ================= Plugins (catalog names, subtitles and versions) ================= */
+const plugins=[
+  {n:'Camera',sub:'Basler pylon',ico:'camera',st:'Installed',v:'1.2.2',d:'Discover and configure Basler cameras, and acquire 2D images and supported 3D payloads.'},
+  {n:'Frame Grabber',sub:'Basler Frame Grabber SDK',ico:'network-card',st:'Installed',v:'0.2.2',d:'Discover Basler frame grabbers, load applets, and acquire images from multiple DMA channels.'},
+  {n:'GenICam',sub:'GenTL / GenApi',ico:'genicam',st:'Update',v:'0.3.4',cur:'0.3.3',d:'Discover devices through GenTL producers, edit GenApi features, and acquire image and multipart data.'},
+  {n:'Gocator',sub:'LMI GoPxL',ico:'lmi',st:'Installed',v:'0.2.2',d:'Discover and configure Gocator sensors, and acquire profile and surface data.'},
+  {n:'Heliotis C4',sub:'C4Utility',ico:'heliotis',st:'Not installed',v:'0.2.2',d:'Configure heliInspect H8 devices and acquire multipart measurement data through C4Utility.'}];
+const I=n=>`<span class="ico" style="--i:url(assets/icons/${n}-48.png)"></span>`;
+const stLine=p=>p.st==='Update'?`${I('downloading-updates')}Update available · ${p.v}`:p.st==='Installed'?`Installed · ${p.v}`:'Not installed';
+$('#plist').innerHTML=plugins.map((p,i)=>`<div class="pit${i?'':' sel'}" data-i="${i}">${I(p.ico)}<b>${p.n}</b><small>${stLine(p)}</small></div>`).join('');
+function pick(i){const p=plugins[i];$$('#plist .pit').forEach(x=>x.classList.toggle('sel',+x.dataset.i===i));
+  const head=p.st==='Update'?`Installed · ${p.cur}`:p.st==='Installed'?`Installed · ${p.v}`:'Not installed';
+  const act=p.st==='Installed'?`<span class="lnk dis">${I('downloading-updates')}Installed</span><span class="lnk" style="font-weight:500">${I('empty-trash')}Uninstall</span>`:p.st==='Update'?`<span class="lnk">${I('downloading-updates')}Update</span><span class="lnk" style="font-weight:500;color:var(--text-2)">${I('empty-trash')}Uninstall</span>`:`<span class="lnk">${I('downloading-updates')}Install</span>`;
+  $('#pdet').innerHTML=`<div class="hd">${I(p.ico)}<div><b>${p.n}</b><small>${p.sub}</small></div></div><span class="st">${head}</span><span>${p.d}</span><div class="ver"><b>Version</b><span class="field combo">${p.v}</span>${act}</div><span class="hint">This plugin's sessions close at activation for install, update or removal.</span>`}
+$$('#plist .pit').forEach(x=>x.onclick=()=>pick(+x.dataset.i));pick(0);
+</script>
 </body>
 </html>
