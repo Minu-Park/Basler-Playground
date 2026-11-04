@@ -171,6 +171,7 @@ a.release:hover{border-color:var(--hover-border)}
 .chat .bd{min-height:372px;align-content:start}
 .chat .tool>.typing{opacity:0;transform:translateY(4px);transition:all .35s}
 .chat .tool>.typing.in{opacity:1;transform:none}
+.scrolly3.done{height:auto}.scrolly3.done>.mgrid{position:static}
 @media (max-width:900px){.scrolly3{height:auto}.scrolly3>.mgrid{position:static}}
 
 .happ .g3{display:contents}
@@ -1071,11 +1072,16 @@ $('#ssw').onclick=()=>{const s=$('#ssw');s.classList.toggle('on');mapp.classList
    Scrolling forward advances the step while the pair is pinned; when scrolling stops the timer reveals the rest. */
 const chatEls=$$('#chat [data-step]'),LAST=5,sc3=$('#scrolly3');let chatStep=-1,chatT=null;
 const chatVisible=()=>{const r=$('#chat').getBoundingClientRect();return r.top<innerHeight*.8&&r.bottom>innerHeight*.2};
-function showChat(n){chatStep=n;setMcp(n>=0);chatEls.forEach(el=>el.classList.toggle('in',+el.dataset.step<=n))}
+// once the story is complete (or the reader scrolls back up) the pinned span is released, so upward scrolling never sticks;
+// the scroll position is compensated so the dialog stays where it is on screen
+function releasePin(){if(sc3.classList.contains('done'))return;const g=sc3.firstElementChild,y0=g.getBoundingClientRect().top;
+  sc3.classList.add('done');const y1=g.getBoundingClientRect().top;if(Math.abs(y1-y0)>1)scrollBy({top:y1-y0,behavior:'instant'})}
+function showChat(n){chatStep=n;setMcp(n>=0);chatEls.forEach(el=>el.classList.toggle('in',+el.dataset.step<=n));if(n>=LAST&&pinned3())releasePin()}
 function chatTick(){clearTimeout(chatT);if(chatStep>=LAST||!chatVisible())return;chatT=setTimeout(()=>{showChat(chatStep+1);chatTick()},reduce?0:1100)}
-const pinned3=()=>getComputedStyle(sc3.firstElementChild).position==='sticky';
-addEventListener('scroll',()=>{if(!pinned3())return;const r=sc3.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0)return;
-  const k=-r.top/span;if(k<-.05||k>1.05)return;const n=Math.round(Math.min(1,Math.max(0,k))*(LAST+1))-1;
+const pinned3=()=>getComputedStyle(sc3.firstElementChild).position==='sticky';let lastY3=scrollY;
+addEventListener('scroll',()=>{const up=scrollY<lastY3;lastY3=scrollY;if(!pinned3())return;const r=sc3.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0)return;
+  const k=-r.top/span;if(k<-.05||k>1.05)return;
+  if(up&&k>0){clearTimeout(chatT);showChat(LAST);return}const n=Math.round(Math.min(1,Math.max(0,k))*(LAST+1))-1;
   // scrolling only moves the conversation forward; revealed steps stay when scrolling back
   if(n>chatStep)showChat(Math.min(LAST,n));clearTimeout(chatT);chatT=setTimeout(chatTick,1500)},{passive:true});
 new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){if(chatStep<0)showChat(0);chatTick()}else clearTimeout(chatT)}),{threshold:.35}).observe($('#chat'));
