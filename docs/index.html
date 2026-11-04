@@ -153,7 +153,7 @@ a.release:hover{border-color:var(--hover-border)}
 .app .sub>.tt .vm{font-weight:500;color:var(--text-2);margin-left:10px}
 .app .ab .tbtn .ico{width:19px;height:19px}
 /* scroll-linked hero: the window stays pinned while the page scrolls through the four modes */
-.scrolly{height:640vh;margin-top:64px}
+.scrolly{height:400vh;margin-top:64px}
 .scrolly .hero-stage{position:sticky;top:72px;margin-top:0}
 .happ .sub{height:clamp(400px,calc(100vh - 336px),640px)!important}
 @media (max-width:900px){.scrolly{height:auto}.scrolly .hero-stage{position:static}}
@@ -900,12 +900,12 @@ function setMode(m,fromUser){
   mode=m;const from={lift:U.uLift.value,mix:U.uMix.value,shade:U.uShade.value,mesh:U.uOpacity.value,pts:ptsU.uOpacity.value,pol:sph.phi,az:sph.theta,dist:sph.radius,bg:bgK};
   const is3=next.cam===OBL;happ.classList.toggle('is3d',is3);happ.classList.toggle('is2d',!is3);updSz();
   const tc=next.cam===OBL?(userCam||OBL):TOP;let az=tc.az;while(az-from.az>Math.PI)az-=2*Math.PI;while(az-from.az<-Math.PI)az+=2*Math.PI;
-  tw={t0:performance.now(),dur:reduce?1:1250,from,to:{lift:next.lift,mix:next.mix,shade:next.shade,mesh:next.mesh,pts:next.pts,pol:tc.pol,az,dist:tc.dist,bg:is3?1:0}};
+  tw={t0:performance.now(),dur:reduce?1:1650,from,to:{lift:next.lift,mix:next.mix,shade:next.shade,mesh:next.mesh,pts:next.pts,pol:tc.pol,az,dist:tc.dist,bg:is3?1:0}};
   controls.enabled=false;
   $$('#rail button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
   $$('#modeMenu button').forEach(b=>b.classList.toggle('cur',b.dataset.m===m));
   $('#modeIco').style.setProperty('--i',`url(assets/icons/${next.icon}-48.png)`);$('#modeLbl').textContent=next.label;$('#colBub').textContent=next.col;
-  if(fromUser)stopAuto();
+  if(fromUser){stopAuto();queued=null}
 }
 function step(now){
   if(tw){const k=Math.min(1,(now-tw.t0)/tw.dur),e=ease(k),f=tw.from,t=tw.to,L=(a,b)=>a+(b-a)*e;
@@ -913,7 +913,9 @@ function step(now){
     U.uLift.value=f.lift+(t.lift-f.lift)*kl;U.uMix.value=L(f.mix,t.mix);U.uShade.value=f.shade+(t.shade-f.shade)*kl;
     U.uOpacity.value=L(f.mesh,t.mesh);ptsU.uOpacity.value=L(f.pts,t.pts);bgK=L(f.bg,t.bg);
     sph.set(L(f.dist,t.dist),Math.max(.0001,L(f.pol,t.pol)),L(f.az,t.az));placeCam();
-    if(k>=1){tw=null;if(MODES[mode].cam===OBL){controls.enabled=true;camera.up.set(0,1,0)}}
+    if(k>=1){tw=null;if(MODES[mode].cam===OBL){controls.enabled=true;camera.up.set(0,1,0)}
+      // a mode the scroll reached during this tween plays next, so fast scrolling still shows every step in full
+      if(queued&&queued!==mode)setMode(queued);queued=null}
   }else if(MODES[mode].cam===OBL){controls.autoRotate=!reduce&&autoOn;controls.autoRotateSpeed=.55;controls.update()}
   if(mesh){flat.visible=U.uLift.value<.3;mesh.visible=U.uOpacity.value>.01&&U.uLift.value>.001;points.visible=ptsU.uOpacity.value>.01;meshMat.depthWrite=U.uOpacity.value>.98}
   renderer.setClearColor(bgC.copy(BG2).lerp(BG3,bgK),1);
@@ -941,12 +943,12 @@ function scheduleAuto(){clearTimeout(autoT);if(!autoOn)return;document.documentE
 function stopAuto(){autoOn=false;clearTimeout(autoT);document.documentElement.style.setProperty('--dwell','0s')}
 canvas.addEventListener('pointerdown',()=>{if(MODES[mode].cam===OBL)stopAuto()});
 /* scroll drives the mode while the pinned window is on screen; when scrolling stops the timer takes over again */
-const scrolly=$('#scrolly');let scrollIdx=-1;
+const scrolly=$('#scrolly');let scrollIdx=-1,queued=null;
 const heroStage=scrolly.querySelector('.hero-stage');
 addEventListener('scroll',()=>{if(getComputedStyle(heroStage).position!=='sticky')return;
-  // progress over the distance the stage actually stays pinned; the last mode holds the final 40%
+  // progress over the distance the stage actually stays pinned; the last mode holds the final 58%
   const r=scrolly.getBoundingClientRect(),span=r.height-heroStage.offsetHeight-72,k=-r.top/span;if(span<=0||k<0||k>1)return;
-  const idx=Math.min(3,Math.floor(k/.2));if(idx!==scrollIdx){scrollIdx=idx;if(order[idx]!==mode)setMode(order[idx])}
+  const idx=Math.min(3,Math.floor(k/.14));if(idx!==scrollIdx){scrollIdx=idx;if(tw&&performance.now()-tw.t0<tw.dur)queued=order[idx];else if(order[idx]!==mode)setMode(order[idx])}
   if(autoOn)scheduleAuto()},{passive:true});
 /* 2D views fit the organized frame into the viewport, like the application's Fit */
 function fitTop(){if(!data)return;const t=Math.tan(THREE.MathUtils.degToRad(15)),w=data.cols*data.pitchX,h=data.rows*data.pitchY;
