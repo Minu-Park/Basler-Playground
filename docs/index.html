@@ -91,7 +91,8 @@ a.release:hover{border-color:var(--hover-border)}
 .app{font:12.5px/1.4 Inter,system-ui,sans-serif;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-frame);box-shadow:var(--shadow-3);overflow:hidden;user-select:none;text-align:left}
 .app .ico{width:16px;height:16px}
 .app .mb{display:flex;align-items:center;gap:20px;height:40px;padding:0 14px;border-bottom:1px solid var(--border);font-size:13.5px;white-space:nowrap;overflow:hidden}
-.app .mb>img{width:20px;height:20px;margin-right:8px}
+.app .mb>img{width:20px;height:20px;margin-right:-6px}
+.app .mb .appname{font-weight:700;font-size:14px;margin-right:26px;color:var(--text)}
 .app .mb .wb{margin-left:auto;display:flex;gap:10px}
 .app .wb .ico{width:16px;height:16px;color:var(--text)}
 .app .ws{background:var(--workspace);padding:14px}
@@ -256,8 +257,13 @@ a.release:hover{border-color:var(--hover-border)}
 .sapp .params{padding:12px 10px;display:grid;gap:10px;align-content:start}
 .sapp .prow{display:grid;grid-template-columns:70px 120px 1fr;gap:10px;align-items:center}
 .sapp .spin{height:24px;border:1px solid var(--border);border-radius:var(--r-control);display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 8px;font-size:12px}
-.sapp .spin input{border:0;outline:0;width:60px;font:12px Inter;color:var(--text);background:none}
-.sapp .spin i{font-style:normal;font-size:7px;line-height:6px;color:var(--text-3);text-align:center}
+.sapp .spin input{border:0;outline:0;width:60px;font:12px Inter;color:var(--text);background:none;-moz-appearance:textfield;appearance:textfield}
+.sapp .spin input::-webkit-inner-spin-button,.sapp .spin input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.sapp .spin{padding:0 0 0 8px!important;overflow:hidden}
+.sapp .spin .arw{align-self:stretch;width:16px;display:flex;flex-direction:column}
+.sapp .spin .arw button{flex:1;width:16px;background:url(assets/icons/chevron-up-neutral.svg) center/8px no-repeat;opacity:.75}
+.sapp .spin .arw button+button{background-image:url(assets/icons/chevron-down-neutral.svg)}
+.sapp .spin .arw button:hover{opacity:1;background-color:var(--hover)}
 .rng{-webkit-appearance:none;appearance:none;width:100%;height:16px;background:transparent;cursor:pointer}
 .rng::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--accent),var(--accent)) 0/var(--p,50%) 100% no-repeat,#e3e3e2}
 .rng::-moz-range-track{height:4px;border-radius:2px;background:#e3e3e2}
@@ -388,7 +394,6 @@ a.release:hover{border-color:var(--hover-border)}
 .dc .lineup figure{display:flex;flex-direction:column;align-items:center;gap:16px;min-width:0;flex:0 1 auto!important}
 .dc .lineup img{height:136px;width:auto;max-width:100%;object-fit:contain;padding:0}
 @media (max-width:760px){.dc .lineup img{height:84px}.dc .lineup{gap:3%;padding:16px}}
-.dc .lineup figcaption{font:600 11px "JetBrains Mono";color:var(--text-3);white-space:nowrap}
 .dc .tx{padding:20px 22px 22px}
 .dc .hd{display:flex;align-items:center;gap:10px;margin-bottom:6px}
 .dc .hd .ico{color:var(--accent);width:20px;height:20px}
@@ -449,7 +454,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 
     <div class="scrolly" id="scrolly"><div class="hero-stage reveal">
       <div class="app happ">
-        <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+        <div class="mb"><img src="assets/app_icon.png" alt=""><b class="appname">Basler Playground</b><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
         <div class="ws">
           <div class="sub">
             <div class="tt"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span><span id="subTitle">bin-sprockets.ply</span><span class="vm">View</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
@@ -513,7 +518,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
   <div class="wrap">
     <div class="sec-head reveal"><div><div class="eyebrow">Analysis · Measure</div><h2>Draw a region.<br>Read the numbers.</h2></div><p>Right-click the view, choose Rectangle or Line and draw it, then right-click the region and choose Measure. Each row keeps its target, field, unit and valid sample count — switch Live on and it updates on each new frame.</p></div>
     <div class="app meapp reveal">
-      <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+      <div class="mb"><img src="assets/app_icon.png" alt=""><b class="appname">Basler Playground</b><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
       <div class="ws">
         <div class="sub">
           <div class="tt"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span>bin-sprockets.ply<span class="vm">View</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
@@ -561,7 +566,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
         </ul>
       </div>
       <div class="app sapp reveal">
-        <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
+        <div class="mb"><img src="assets/app_icon.png" alt=""><b class="appname">Basler Playground</b><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
         <div class="ws">
           <div class="sub">
             <div class="tt"><span class="ico" style="--i:url(assets/icons/camera-48.png);color:var(--accent)"></span>Basler acA2440-20gm (24811503)<span class="vm">View</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
@@ -602,7 +607,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
                   </div>
                   <div class="page" id="p-par">
                     <div class="params">
-                      <div class="prow"><span>level</span><span class="spin"><input id="num" type="number" min="1" max="255" value="150" aria-label="level"><i>⌃<br>⌄</i></span><input id="sl" class="rng" type="range" min="1" max="255" value="150" aria-label="level slider"></div>
+                      <div class="prow"><span>level</span><span class="spin"><input id="num" type="number" min="1" max="255" value="150" aria-label="level"><span class="arw"><button type="button" data-d="1" aria-label="Increase level"></button><button type="button" data-d="-1" aria-label="Decrease level"></button></span></span><input id="sl" class="rng" type="range" min="1" max="255" value="150" aria-label="level slider"></div>
                     </div>
                   </div>
                 </div>
@@ -726,7 +731,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
     </div>
     <div class="dgrid">
       <article class="dc cam reveal">
-        <div class="ph lineup"><figure style="flex:1.9"><img src="assets/img/p-ace2-t.jpg" alt="Basler ace 2 cameras"><figcaption>ace 2 · 2D</figcaption></figure><figure style="flex:1"><img src="assets/img/p-blaze-t.jpg" alt="Basler blaze ToF camera"><figcaption>blaze · ToF</figcaption></figure><figure style="flex:2"><img src="assets/img/p-stereo-ace-t.jpg" alt="Basler Stereo ace camera"><figcaption>Stereo ace · 3D</figcaption></figure></div>
+        <div class="ph lineup"><figure style="flex:1.9"><img src="assets/img/p-ace2-t.jpg" alt="Basler ace 2 cameras"></figure><figure style="flex:1"><img src="assets/img/p-blaze-t.jpg" alt="Basler blaze ToF camera"></figure><figure style="flex:2"><img src="assets/img/p-stereo-ace-t.jpg" alt="Basler Stereo ace camera"></figure></div>
         <div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/camera-48.png)"></span><h3>Camera</h3><span class="tag">Basler pylon</span></div><p>Discover and configure Basler cameras, and acquire 2D images and supported 3D payloads.</p></div>
       </article>
       <article class="dc fg reveal">
@@ -1054,6 +1059,7 @@ function drawS(){if(!srcPx)return;const r=sv.getBoundingClientRect();sv.width=r.
 let pend=false;function setL(v){v=Math.max(1,Math.min(255,Math.round(+v)||1));sl.value=num.value=v;sl.style.setProperty('--p',((v-1)/254*100)+'%');$('#cv').textContent=v;
   if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;drawS()})}}
 sl.oninput=e=>setL(e.target.value);num.oninput=e=>setL(e.target.value);setL(150);
+$$('.sapp .spin .arw button').forEach(b=>b.onclick=()=>setL(+num.value+ +b.dataset.d));
 $$('#stabs button').forEach(b=>b.onclick=()=>{$$('#stabs button').forEach(x=>x.classList.toggle('on',x===b));$('#p-code').classList.toggle('on',b.dataset.p==='code');$('#p-par').classList.toggle('on',b.dataset.p==='par')});
 new ResizeObserver(()=>drawS()).observe(sv);
 /* scroll story: Write (Code Editor) → Build & load (console, plugged-in glyph) → Tune (Interactive Parameters, level follows scroll) */
