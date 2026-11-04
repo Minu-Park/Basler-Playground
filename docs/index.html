@@ -77,6 +77,7 @@ h1,h2,h3{color:#2a2a29;letter-spacing:-.03em}
 .hero-top{text-align:center;max-width:980px;margin:0 auto}
 .release{display:inline-flex;align-items:center;gap:10px;height:32px;padding:0 6px 0 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:13px;color:var(--text-2);box-shadow:var(--shadow-1)}
 .release b{font:600 12px "JetBrains Mono";color:var(--accent)}
+a.release:hover{border-color:var(--hover-border)}
 .release span:last-child{background:var(--current);color:var(--accent);font-weight:600;border-radius:999px;padding:3px 10px;font-size:12px}
 .hero h1{font-size:clamp(44px,7vw,88px);line-height:.98;font-weight:800;letter-spacing:-.045em;margin:28px 0 24px}
 .hero h1 .a{color:var(--accent)}
@@ -263,7 +264,7 @@ h1,h2,h3{color:#2a2a29;letter-spacing:-.03em}
 /* measure app */
 .app .tbtn.on{background:var(--pressed)}
 .meapp .sub{display:flex;flex-direction:column}
-.mview{position:relative;height:400px;background:#fff;overflow:hidden;cursor:crosshair;touch-action:none}
+.mview{position:relative;height:400px;background:#fff;overflow:hidden;touch-action:none}
 .mview canvas{position:absolute;inset:0;width:100%;height:100%}
 #rois{position:absolute;inset:0;pointer-events:none}
 .roi{position:absolute;border:2px solid rgb(0,111,191);box-shadow:0 0 0 1.5px #fff,inset 0 0 0 1.5px #fff}
@@ -390,6 +391,7 @@ h1,h2,h3{color:#2a2a29;letter-spacing:-.03em}
 .dc .glyph{height:220px;display:grid;place-items:center;background:#fff;border-bottom:1px solid var(--border)}
 .dc.sm .ph{height:220px}
 .dc.sm .ph img{padding:20px}
+.dc.sm .ph img.logo{width:auto;height:auto;max-width:210px;padding:0}
 .dc .glyph .ico{width:52px;height:52px;color:var(--accent)}
 @media (max-width:1000px){.dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.dc.cam,.dc.fg,.dc.sm{grid-column:span 2}}
 @media (min-width:640px) and (max-width:1000px){.dc.sm{grid-column:span 1}}
@@ -426,7 +428,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <section class="hero" id="views">
   <div class="wrap">
     <div class="hero-top">
-      <span class="release"><b>v0.6.4</b> Machine vision workspace <span>What's new</span></span>
+      <a class="release" id="relChip" href="https://github.com/Minu-Park/Basler-Playground/releases/latest"><b id="relVer">v0.6.4</b> Machine vision workspace <span>What's new</span></a>
       <h1>One frame.<br><span class="a">Every way to see it.</span></h1>
       <p class="lead">Basler Playground connects Basler cameras, framegrabbers and 3D sensors in one workspace. Move freely between Range, Surface and PointCloud on the same data, tune C++ scripts on the running stream, and let an AI client work the bench over MCP.</p>
       <div class="hero-cta">
@@ -485,7 +487,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
       </div>
       <div class="rail-cap">one organized scan · <b>four display modes</b> · no conversion step</div>
       <div class="rail" id="rail">
-        <button data-m="image"><span class="ib"><span class="ico" style="--i:url(assets/icons/image-view-48.png)"></span></span><b>Image</b><small>The intensity frame from the sensor.</small></button>
+        <button data-m="image"><span class="ib"><span class="ico" style="--i:url(assets/icons/image-view-48.png)"></span></span><b>Image</b><small>The 2D image captured with the scan.</small></button>
         <button data-m="range"><span class="ib"><span class="ico" style="--i:url(assets/icons/depth-48.png)"></span></span><b>Range</b><small>Every pixel colored by its height.</small></button>
         <button data-m="surface"><span class="ib"><span class="ico" style="--i:url(assets/icons/orthogonal-view-48.png)"></span></span><b>Surface</b><small>The same pixels lifted into a lit mesh.</small></button>
         <button data-m="points"><span class="ib"><span class="ico" style="--i:url(assets/icons/map-grid-48.png)"></span></span><b>PointCloud</b><small>Measured XYZ points, free to orbit.</small></button>
@@ -499,7 +501,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <!-- MEASURE -->
 <section class="section tint" id="measure">
   <div class="wrap">
-    <div class="sec-head reveal"><div><div class="eyebrow">Analysis · Measure</div><h2>Draw a region.<br>Read the numbers.</h2></div><p>Right-click the view, add a Rectangle or Line, and choose Measure. Each row keeps its target, field, unit and valid sample count — switch Live on and it follows every new frame.</p></div>
+    <div class="sec-head reveal"><div><div class="eyebrow">Analysis · Measure</div><h2>Draw a region.<br>Read the numbers.</h2></div><p>Right-click the view, choose Rectangle or Line and draw it, then right-click the region and choose Measure. Each row keeps its target, field, unit and valid sample count — switch Live on and it updates on each new frame.</p></div>
     <div class="app meapp reveal">
       <div class="mb"><img src="assets/app_icon.png" alt=""><span class="mi">Device</span><span class="mi">Simulation</span><span class="mi">System</span><span class="mi">Window</span><span class="mi">HMI</span><span class="mi">Help</span><span class="wb"><span class="ico" style="--i:url(assets/icons/minimize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/maximize-window-outline-48.png)"></span><span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></span></div>
       <div class="ws">
@@ -512,7 +514,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
             <button class="tbtn on" aria-label="Analysis"><span class="ico" style="--i:url(assets/icons/info-48.png)"></span></button>
             <button class="tbtn" aria-label="Settings"><span class="ico" style="--i:url(assets/icons/setting-48.png)"></span></button>
           </div>
-          <div class="mview" id="mview"><canvas id="mcv"></canvas><div id="rois"></div><div class="mhint" id="mhint">Drag to add a Rectangle · right-click for the analysis menu</div>
+          <div class="mview" id="mview"><canvas id="mcv"></canvas><div id="rois"></div><div class="mhint" id="mhint">Right-click → Rectangle or Line, then drag</div>
             <div class="popup" id="ctx">
               <button data-a="line">Line</button><button data-a="rect">Rectangle</button><hr>
               <button data-a="hist">Histogram</button><button data-a="proj">Projection</button><button data-a="measure">Measure</button>
@@ -530,7 +532,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
     </div>
     <div class="mpoints">
       <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/cursor-48.png)"></span></span><b>Rectangle and Line ROIs</b><span>Regions are named R1, R2… and lines L1, L2…, and stay on the view across frames.</span></div>
-      <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/health-data-48.png)"></span></span><b>Histogram, Projection, Measure</b><span>One menu for every analysis; each request opens its own result tab.</span></div>
+      <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/health-data-48.png)"></span></span><b>Histogram, Projection, Measure</b><span>Histogram, Projection and Profile open their own result tabs; Measure rows collect in one table.</span></div>
       <div class="reveal"><span class="ib"><span class="ico" style="--i:url(assets/icons/depth-48.png)"></span></span><b>Real units, real samples</b><span>Range values are measured in mm from the source frame, with invalid points counted out.</span></div>
     </div>
   </div>
@@ -594,7 +596,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
                     </div>
                   </div>
                 </div>
-                <div class="frame con"><div class="hd">Console Logs<span>Clear</span><span class="ico xbtn" style="--i:url(assets/icons/close-window-outline-48.png);margin:0"></span></div><div class="bd" id="log"><div>[10:42:18.204] [INFO] Build finished.</div><div class="ok">[10:42:18.391] [INFO] Filter script active and injected into pipeline.</div><div id="logl">[10:42:19.007] [INFO] level = 150</div></div></div>
+                <div class="frame con"><div class="hd">Console Logs<span>Clear</span><span class="ico xbtn" style="--i:url(assets/icons/close-window-outline-48.png);margin:0"></span></div><div class="bd" id="log"><div>[10:42:16.882] [INFO] Preparing temporary build source...</div><div>[10:42:16.905] [INFO] Invoking C++ compiler...</div><div class="ok">[10:42:18.391] [INFO] Filter script active and injected into pipeline.</div></div></div>
               </div>
             </div>
           </div>
@@ -612,7 +614,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
     <div class="split">
       <div class="copy reveal">
         <ul class="points">
-          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/books-48.png)"></span></span><div><b>One list of libraries</b><span>Open Libraries from the main status bar, next to the loaded library count.</span></div></li>
+          <li><span class="ib"><span class="ico" style="--i:url(assets/icons/books-48.png)"></span></span><div><b>One list of libraries</b><span>Open System › Libraries, or click the library count in the main status bar.</span></div></li>
           <li><span class="ib"><span class="ico" style="--i:url(assets/icons/folder-48.png)"></span></span><div><b>Headers, link files, DLLs</b><span>Point to <code>.h / .hpp</code> folders, <code>.lib</code> folders and files, and the <code>.dll</code> folder used at run time.</span></div></li>
           <li><span class="ib"><span class="ico" style="--i:url(assets/icons/plug-connected-48.png)"></span></span><div><b>Checked before the build</b><span>Paths and link files are resolved when you apply, so a missing library shows up here — not as a build error.</span></div></li>
         </ul>
@@ -663,7 +665,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <!-- MCP -->
 <section class="section" id="mcp">
   <div class="wrap">
-    <div class="sec-head reveal"><div><div class="eyebrow">MCP connection</div><h2>Let your AI client work the bench.</h2></div><p>Turn on the MCP connection and a trusted AI client on this computer can open sessions, connect devices, read and change features, start acquisition and capture snapshots. Editing and running scripts needs a separate approval.</p></div>
+    <div class="sec-head reveal"><div><div class="eyebrow">MCP connection</div><h2>Let your AI client work the bench.</h2></div><p>Turn on System › MCP Connection and a trusted AI client on this computer can open sessions, connect devices, read and change features, start acquisition and capture snapshots. Editing and running scripts needs a separate approval.</p></div>
     <div class="mgrid">
       <div class="app dlg mapp reveal" id="mapp">
         <div class="tt">MCP Connection<span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></div>
@@ -687,9 +689,9 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
         <div class="bd">
           <div class="u typing">The acA2440 image is saturated. Bring exposure down until it isn't, then tell me the frame rate.</div>
           <div class="tool typing">
-            <div><b>device.parameters.search</b>"Exposure"<i>ExposureTime = 35000</i></div>
-            <div><b>device.parameters.write</b>ExposureTime: 12000<i>ok</i></div>
-            <div><b>device.parameters.read</b>ResultingFrameRate<i>23.4</i></div>
+            <div><b>device.parameters.search</b>"Exposure"<i>ExposureTimeAbs = 35000</i></div>
+            <div><b>device.parameters.write</b>ExposureTimeAbs: 12000<i>ok</i></div>
+            <div><b>device.parameters.read</b>ResultingFrameRateAbs<i>23.4</i></div>
           </div>
           <div class="a typing">Exposure is now 12 ms (was 35 ms) and the image is no longer clipped. The camera reports 23.4 fps.</div>
         </div>
@@ -702,7 +704,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <!-- DEVICES -->
 <section class="section tint" id="devices">
   <div class="wrap">
-    <div class="sec-head reveal"><div><div class="eyebrow">Device plugins</div><h2>Every device family.<br>One workspace.</h2></div><p>Each device family ships as its own plugin package with its own version. Install, update or remove them from Device › Manage Plugins — Playground itself stays the same.</p></div>
+    <div class="sec-head reveal"><div><div class="eyebrow">Device plugins</div><h2>Every device family.<br>One workspace.</h2></div><p>Each device family ships as its own plugin package with its own version. Install, update or remove them from System › Plugins — Playground itself stays the same.</p></div>
     <div class="app dlg papp reveal">
       <div class="tt">Plugins<span class="ico" style="--i:url(assets/icons/close-window-outline-48.png)"></span></div>
       <div class="top"><span class="field combo">All plugins</span><button class="tbtn" aria-label="Refresh"><span class="ico" style="--i:url(assets/icons/refresh-48.png)"></span></button></div>
@@ -722,7 +724,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
       </article>
       <article class="dc sm reveal"><div class="ph"><img src="assets/img/p-gocator-t.jpg" alt="LMI Gocator 2500 3D laser profiler"></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/lmi-48.png)"></span><h3>Gocator</h3><span class="tag">LMI GoPxL</span></div><p>Discover and configure Gocator sensors, and acquire profile and surface data.</p></div></article>
       <article class="dc sm reveal"><div class="ph"><img src="assets/img/p-h8-t.jpg" alt="Heliotis heliInspect H8 with objective modules"></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/heliotis-48.png)"></span><h3>Heliotis C4</h3><span class="tag">C4Utility</span></div><p>Configure heliInspect H8 devices and acquire multipart measurement data through C4Utility.</p></div></article>
-      <article class="dc sm reveal"><div class="glyph"><span class="ico" style="--i:url(assets/icons/genicam-48.png)"></span></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/genicam-48.png)"></span><h3>GenICam</h3><span class="tag">GenTL / GenApi</span></div><p>Discover devices through GenTL producers, edit GenApi features, and acquire image and multipart data.</p></div></article>
+      <article class="dc sm reveal"><div class="ph"><img class="logo" src="assets/img/p-genicam.png" alt="GenICam logo"></div><div class="tx"><div class="hd"><span class="ico" style="--i:url(assets/icons/genicam-48.png)"></span><h3>GenICam</h3><span class="tag">GenTL / GenApi</span></div><p>Discover devices through GenTL producers, edit GenApi features, and acquire image and multipart data.</p></div></article>
     </div>
   </div>
 </section>
@@ -743,7 +745,7 @@ footer .cr{font-size:12px;line-height:1.6;max-width:880px}
 <footer>
   <div class="wrap">
     <div class="top"><a href="#" class="brand"><img src="assets/app_icon.png" alt="">Basler Playground</a><span>Provided by Basler Korea</span><div class="links"><a href="https://github.com/Minu-Park/Basler-Playground/releases">Releases</a><a href="https://github.com/Minu-Park/Basler-Playground-Plugins">Plugins</a><a href="https://github.com/Minu-Park/Basler-Playground/issues">Report an issue</a></div></div>
-    <p class="cr">3D scans: National Institute of Standards and Technology, “Data for Filtering Organized 3D Point Clouds for Bin Picking Applications”, doi:10.18434/mds2-3138 — downsampled and re-centred for this page. Product photos and the wire-bond sample image © Basler AG; Gocator photo © LMI Technologies; heliInspect H8 photo © Heliotis AG. Application screens on this page are interactive reproductions of Playground's interface.</p>
+    <p class="cr">3D scans: National Institute of Standards and Technology, “Data for Filtering Organized 3D Point Clouds for Bin Picking Applications”, doi:10.18434/mds2-3138 — downsampled and re-centred for this page. Product photos and the wire-bond sample image © Basler AG; Gocator photo © LMI Technologies; heliInspect H8 photo © Heliotis AG; GenICam logo © EMVA. Application screens on this page are interactive reproductions of Playground's interface.</p>
   </div>
 </footer>
 
@@ -770,6 +772,7 @@ const DPR=Math.min(2,devicePixelRatio||1);
     const pri=isMac&&mac?mac:win,alt=pri===win?mac:win;if(!pri)return;
     const os=pri===mac?'macOS':'Windows',mb=a=>Math.round(a.size/1048576)+' MB';
     $$('[data-dl="primary"]').forEach(a=>a.href=pri.browser_download_url);
+    $('#relVer').textContent=ver;$('#relChip').href=rel.html_url;
     $$('[data-dl-label]').forEach((s,i)=>s.textContent=i===0?`Download for ${os}`:`Download ${ver} for ${os}`);
     $$('[data-dl-file]').forEach(s=>s.textContent=`${pri.name} · ${mb(pri)}`);
     $$('[data-dl="alt"]').forEach(a=>{if(alt){a.href=alt.browser_download_url;a.querySelector('[data-dl-alt]').textContent=alt===mac?'macOS (Apple silicon) installer':'Windows installer'}else a.style.display='none'});
@@ -936,7 +939,7 @@ new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)clearTimeout(au
   const rb=v=>{v=Math.min(1,Math.max(0,v));const h=(2/3)*(1-v)*6,f=h-Math.floor(h),s=Math.floor(h)%6;return[[1,f,0],[1-f,1,0],[0,1,f],[0,1-f,1],[f,0,1],[1,0,1-f]][s]};
   const base=document.createElement('canvas');base.width=C;base.height=R;{const g=base.getContext('2d'),im=g.createImageData(C,R);
     for(let i=0;i<C*R;i++){const c=VV[i]?rb(HH[i]/D.top):[1,1,1];im.data[i*4]=c[0]*255;im.data[i*4+1]=c[1]*255;im.data[i*4+2]=c[2]*255;im.data[i*4+3]=255}g.putImageData(im,0,0)}
-  let F={x:0,y:0,s:1},rois=[],nR=1,nL=1,hov=-1,menuTarget=-1,tool='rect',drag=null,rows=[],tabs=[{id:'m',t:'Measure'}],act='m',selRow=-1,plots={};
+  let F={x:0,y:0,s:1},rois=[],nR=1,nL=1,hov=-1,menuTarget=-1,tool=null,drag=null,rows=[],tabs=[{id:'m',t:'Measure'}],act='m',selRow=-1,plots={};
   function draw(){const r=mv.getBoundingClientRect();mc.width=r.width*DPR;mc.height=r.height*DPR;const g=mc.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,mc.width,mc.height);
     const s=Math.min((r.width-20)/C,(r.height-20)/R);F={s,x:(r.width-C*s)/2,y:(r.height-R*s)/2};g.imageSmoothingEnabled=false;g.drawImage(base,F.x*DPR,F.y*DPR,C*s*DPR,R*s*DPR);renderRois()}
   const toG=e=>{const r=mv.getBoundingClientRect();return[Math.max(0,Math.min(C,(e.clientX-r.left-F.x)/F.s)),Math.max(0,Math.min(R,(e.clientY-r.top-F.y)/F.s))]};
@@ -992,19 +995,20 @@ new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)clearTimeout(au
   const closeMenu=()=>ctx.classList.remove('show');
   ctx.addEventListener('pointerdown',e=>e.stopPropagation());
   ctx.querySelectorAll('button').forEach(b=>b.onclick=()=>{const a=b.dataset.a,o=menuTarget>=0?rois[menuTarget]:null;closeMenu();
-    if(a==='line'||a==='rect'){tool=a;$('#mhint').textContent=`Drag to draw a ${a==='line'?'Line':'Rectangle'}`;$('#mhint').style.opacity=1}
+    if(a==='line'||a==='rect'){tool=a;mv.style.cursor='crosshair';$('#mhint').textContent=`Drag to draw a ${a==='line'?'Line':'Rectangle'}`;$('#mhint').style.opacity=1}
     else if(a==='measure')addRow(o);else if(a==='hist'||a==='proj')addPlot(a,o);
     else if(a==='delete'&&o){rois.splice(menuTarget,1);hov=-1;renderRois()}else if(a==='clear'){rois=[];hov=-1;renderRois()}
     else if(a==='clearres'){rows=[];tabs=[{id:'m',t:'Measure'}];act='m';plots={};renderTabs()}});
   document.addEventListener('pointerdown',e=>{if(!ctx.contains(e.target))closeMenu()});
   mv.addEventListener('contextmenu',e=>{e.preventDefault();openMenu(e)});
-  mv.addEventListener('pointerdown',e=>{if(e.button!==0)return;closeMenu();const g=toG(e);drag={k:tool==='line'?'L':'R',a:g,b:g};mv.setPointerCapture(e.pointerId)});
+  // as in the application, a shape is drawn only after choosing Rectangle or Line, and the draw mode ends with that shape
+  mv.addEventListener('pointerdown',e=>{if(e.button!==0)return;closeMenu();if(!tool)return;const g=toG(e);drag={k:tool==='line'?'L':'R',a:g,b:g};mv.setPointerCapture(e.pointerId)});
   mv.addEventListener('pointermove',e=>{const g=toG(e);$('#mxy').innerHTML=`X ${Math.floor(g[0])}&nbsp;&nbsp;Y ${Math.floor(g[1])}`;
     if(drag){drag.b=g;const tmp={...drag,name:drag.k==='L'?`L${nL}`:`R${nR}`};const keep=rois;rois=[...keep,tmp];hov=rois.length-1;renderRois();rois=keep;return}
     const h=hit(g);if(h!==hov){hov=h;renderRois()}});
   mv.addEventListener('pointerup',e=>{if(!drag)return;const d=drag;drag=null;const big=Math.hypot((d.b[0]-d.a[0])*F.s,(d.b[1]-d.a[1])*F.s)>12;
-    if(!big){renderRois();return}const o={k:d.k,a:d.a,b:d.b,name:d.k==='L'?`L${nL++}`:`R${nR++}`};rois.push(o);hov=rois.length-1;renderRois();
-    $('#mhint').textContent=`Right-click ${o.name} → Measure`;$('#mhint').style.opacity=1;openMenu(e)});
+    if(!big){renderRois();return}const o={k:d.k,a:d.a,b:d.b,name:d.k==='L'?`L${nL++}`:`R${nR++}`};rois.push(o);hov=rois.length-1;tool=null;mv.style.cursor='';renderRois();
+    $('#mhint').textContent=`Right-click ${o.name} → Measure`;$('#mhint').style.opacity=1});
   mv.addEventListener('pointerleave',()=>{if(!drag&&hov>=0){hov=-1;renderRois()}});
   // live rows follow new frames: the source repeats this scan, so values hold and the result time advances
   setInterval(()=>{if(rows.some(r=>r.live)){rows.forEach(r=>{if(r.live)Object.assign(r,measure(r.o))});if(act==='m')renderTabs()}},1000);
@@ -1023,7 +1027,7 @@ function drawS(){if(!srcPx)return;const r=sv.getBoundingClientRect();sv.width=r.
   const tmp=document.createElement('canvas');tmp.width=sw;tmp.height=sh;tmp.getContext('2d').putImageData(out,0,0);
   const pad=10*DPR,k=Math.min((sv.width-pad*2)/sw,(sv.height-pad*2)/sh),dw=sw*k,dh=sh*k;g.imageSmoothingQuality='high';g.drawImage(tmp,(sv.width-dw)/2,(sv.height-dh)/2,dw,dh)}
 let pend=false;function setL(v){v=Math.max(1,Math.min(255,Math.round(+v)||1));sl.value=num.value=v;sl.style.setProperty('--p',((v-1)/254*100)+'%');$('#cv').textContent=v;
-  if($('#logl'))$('#logl').textContent=`[${new Date().toTimeString().slice(0,8)}.${String(Date.now()%1000).padStart(3,'0')}] [INFO] level = ${v}`;if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;drawS()})}}
+  if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;drawS()})}}
 sl.oninput=e=>setL(e.target.value);num.oninput=e=>setL(e.target.value);setL(150);
 $$('#stabs button').forEach(b=>b.onclick=()=>{$$('#stabs button').forEach(x=>x.classList.toggle('on',x===b));$('#p-code').classList.toggle('on',b.dataset.p==='code');$('#p-par').classList.toggle('on',b.dataset.p==='par')});
 new ResizeObserver(()=>drawS()).observe(sv);
@@ -1031,11 +1035,11 @@ new ResizeObserver(()=>drawS()).observe(sv);
 {
   const sc=$('#scrolly2'),steps=$$('#ssteps li'),plug=document.querySelector('.sapp .etb .tbtn[aria-label="Unload"]'),logEl=$('#log');
   const t0=()=>new Date().toTimeString().slice(0,8);let phase=-1;
-  const logs=['<div>Synthetic processing state. No worker is running.</div>',
-    `<div>[${t0()}.204] [INFO] Build finished.</div><div class="ok">[${t0()}.391] [INFO] Filter script active and injected into pipeline.</div><div id="logl"></div>`];
+  const logs=['',
+    `<div>[${t0()}.882] [INFO] Preparing temporary build source...</div><div>[${t0()}.905] [INFO] Invoking C++ compiler...</div><div class="ok">[${t0()}.391] [INFO] Filter script active and injected into pipeline.</div>`];
   function setPhase(p){if(p===phase)return;phase=p;steps.forEach((li,i)=>li.classList.toggle('on',i===p));
     plug.classList.toggle('blue',p>=1);plug.setAttribute('aria-label',p>=1?'Unload':'Load');
-    if(p===0){logEl.innerHTML=logs[0]}else if(p>=1&&!$('#logl')){logEl.innerHTML=logs[1]}
+    if(p===0){logEl.innerHTML=logs[0]}else if(p>=1&&!logEl.children.length){logEl.innerHTML=logs[1]}
     $$('#stabs button')[p===2?1:0].click()}
   addEventListener('scroll',()=>{if(getComputedStyle(sc.firstElementChild).position!=='sticky')return;
     const r=sc.getBoundingClientRect(),span=r.height-innerHeight;if(span<=0)return;const k=Math.min(1,Math.max(0,-r.top/span));
@@ -1049,7 +1053,9 @@ $$('#libs .it').forEach(r=>r.onclick=()=>{$$('#libs .it').forEach(x=>x.classList
 
 /* ================= MCP ================= */
 const mapp=$('#mapp');
-function setMcp(on){$('#msw').classList.toggle('on',on);$('#mst').textContent=on?'Ready · 1 client session(s)':'MCP is disabled.';const a=$('#maddr');a.textContent=on?'http://127.0.0.1:38171/mcp':'Available after enabling MCP';a.classList.toggle('ph',!on)}
+// McpConnection serves http://127.0.0.1:<port>/mcp/<capability>; the capability here is a random placeholder
+const mcpUrl='http://127.0.0.1:38171/mcp/'+[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');
+function setMcp(on){$('#msw').classList.toggle('on',on);$('#mst').textContent=on?'Ready · 1 client session(s)':'MCP is disabled.';const a=$('#maddr');a.textContent=on?mcpUrl:'Available after enabling MCP';a.classList.toggle('ph',!on)}
 $('#msw').onclick=()=>setMcp(!$('#msw').classList.contains('on'));
 $('#ssw').onclick=()=>{const s=$('#ssw');s.classList.toggle('on');mapp.classList.toggle('scripts',s.classList.contains('on'))};
 const chatEls=$$('#chat .typing');
